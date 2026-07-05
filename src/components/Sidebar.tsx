@@ -9,6 +9,7 @@ const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/transactions", label: "Transacciones", icon: "💳" },
   { href: "/budgets", label: "Presupuestos", icon: "🎯" },
+  { href: "/goals", label: "Metas", icon: "🎯" },
   { href: "/reports", label: "Reportes", icon: "📈" },
 ]
 

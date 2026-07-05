@@ -16,6 +16,7 @@ model User {
   transactions Transaction[]
   categories   Category[]
   budgets      Budget[]
+  goals        Goal[]
 }
 
 model Category {
@@ -43,6 +44,19 @@ model Transaction {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+}
+
+model Goal {
+  id        String   @id @default(cuid())
+  name      String
+  target    Float
+  saved     Float    @default(0)
+  deadline  DateTime?
+  color     String   @default("#6366f1")
+  icon      String   @default("🎯")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model Budget {
