@@ -18,6 +18,8 @@ type Category = {
 type Transaction = {
   id: string
   amount: number
+  quantity: number | null
+  notes: string | null
   description: string
   date: string
   type: string
@@ -36,6 +38,9 @@ export default function TransactionsPage() {
   const [filter, setFilter] = useState("all")
   const [form, setForm] = useState({
     amount: "",
+    quantity: "",
+    unitPrice: "",
+    notes: "",
     description: "",
     date: new Date().toISOString().split("T")[0],
     type: "expense",
@@ -49,6 +54,31 @@ export default function TransactionsPage() {
   useEffect(() => {
     Promise.all([fetchTransactions(), fetchCategories()])
   }, [])
+
+  function calcTotal(q: string, up: string) {
+    const qty = parseFloat(q) || 0
+    const price = parseFloat(up) || 0
+    if (qty > 0 && price > 0) {
+      return (qty * price).toFixed(2)
+    }
+    return ""
+  }
+
+  function handleQuantityChange(value: string) {
+    setForm((prev) => ({
+      ...prev,
+      quantity: value,
+      amount: calcTotal(value, prev.unitPrice),
+    }))
+  }
+
+  function handleUnitPriceChange(value: string) {
+    setForm((prev) => ({
+      ...prev,
+      unitPrice: value,
+      amount: calcTotal(prev.quantity, value),
+    }))
+  }
 
   async function fetchTransactions() {
     try {
@@ -75,6 +105,9 @@ export default function TransactionsPage() {
   function resetForm() {
     setForm({
       amount: "",
+      quantity: "",
+      unitPrice: "",
+      notes: "",
       description: "",
       date: new Date().toISOString().split("T")[0],
       type: "expense",
@@ -101,7 +134,15 @@ export default function TransactionsPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          amount: form.amount,
+          quantity: form.quantity || null,
+          notes: form.notes || null,
+          description: form.description,
+          date: form.date,
+          type: form.type,
+          categoryId: form.categoryId,
+        }),
       })
 
       if (!res.ok) throw new Error()
@@ -128,9 +169,13 @@ export default function TransactionsPage() {
   }
 
   function handleEdit(t: Transaction) {
+    const unitPrice = t.quantity && t.quantity > 0 ? (t.amount / t.quantity).toFixed(2) : ""
     setEditing(t)
     setForm({
       amount: String(t.amount),
+      quantity: t.quantity ? String(t.quantity) : "",
+      unitPrice,
+      notes: t.notes || "",
       description: t.description,
       date: new Date(t.date).toISOString().split("T")[0],
       type: t.type,
@@ -200,7 +245,7 @@ export default function TransactionsPage() {
 
           {showForm && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl w-full max-w-md p-6">
+              <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold">
                     {editing ? "Editar transacción" : "Nueva transacción"}
@@ -251,8 +296,38 @@ export default function TransactionsPage() {
                     </select>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={form.quantity}
+                        onChange={(e) => handleQuantityChange(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Precio Unitario</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-500">S/</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form.unitPrice}
+                          onChange={(e) => handleUnitPriceChange(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total</label>
                     <div className="relative">
                       <span className="absolute left-3 top-2.5 text-gray-500">S/</span>
                       <input
@@ -262,10 +337,11 @@ export default function TransactionsPage() {
                         required
                         value={form.amount}
                         onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2.5 border border-indigo-300 bg-indigo-50 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
                         placeholder="0.00"
                       />
                     </div>
+                    <p className="text-xs text-gray-400 mt-1">Se calcula automáticamente si pones cantidad y precio unitario</p>
                   </div>
 
                   <div>
@@ -276,7 +352,18 @@ export default function TransactionsPage() {
                       value={form.description}
                       onChange={(e) => setForm({ ...form, description: e.target.value })}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="¿En qué gastaste?"
+                      placeholder="¿Qué compraste?"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+                    <textarea
+                      value={form.notes}
+                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                      placeholder="Detalles adicionales..."
+                      rows={2}
                     />
                   </div>
 
@@ -317,36 +404,43 @@ export default function TransactionsPage() {
             </div>
           ) : filteredTransactions.length > 0 ? (
             <div className="bg-white rounded-xl shadow-sm border divide-y">
-              {filteredTransactions.map((t) => (
-                <div key={t.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-2xl flex-shrink-0">{t.category.icon}</span>
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-800 truncate">{t.description}</p>
-                      <p className="text-sm text-gray-400">
-                        {t.category.name} · {formatDate(t.date)}
-                      </p>
+              {filteredTransactions.map((t) => {
+                const unitPrice = t.quantity && t.quantity > 0 ? t.amount / t.quantity : null
+                return (
+                  <div key={t.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <span className="text-2xl flex-shrink-0">{t.category.icon}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-800 truncate">{t.description}</p>
+                        <p className="text-sm text-gray-400">
+                          {t.category.name} · {formatDate(t.date)}
+                          {t.quantity && unitPrice ? ` · ${t.quantity} und. x S/ ${unitPrice.toFixed(2)}` : ""}
+                        </p>
+                        {t.notes && (
+                          <p className="text-xs text-gray-400 italic truncate">📝 {t.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <span className={`font-semibold ${t.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                        {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
+                      </span>
+                      <button
+                        onClick={() => handleEdit(t)}
+                        className="text-gray-400 hover:text-gray-600 text-sm p-1"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDelete(t.id)}
+                        className="text-gray-400 hover:text-red-600 text-sm p-1"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`font-semibold ${t.type === "income" ? "text-green-600" : "text-red-600"}`}>
-                      {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
-                    </span>
-                    <button
-                      onClick={() => handleEdit(t)}
-                      className="text-gray-400 hover:text-gray-600 text-sm p-1"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDelete(t.id)}
-                      className="text-gray-400 hover:text-red-600 text-sm p-1"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="text-center py-16 text-gray-400">

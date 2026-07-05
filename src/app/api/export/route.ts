@@ -29,13 +29,16 @@ export async function GET(request: Request) {
     orderBy: { date: "desc" },
   })
 
-  const headers = ["Fecha", "Tipo", "Categoría", "Descripción", "Monto"]
+  const headers = ["Fecha", "Tipo", "Categoría", "Descripción", "Cantidad", "P. Unitario", "Total", "Observaciones"]
   const rows = transactions.map((t) => [
     new Date(t.date).toLocaleDateString("es-PE"),
     t.type === "income" ? "Ingreso" : "Gasto",
     t.category.name,
     t.description,
+    t.quantity ? String(t.quantity) : "",
+    t.quantity ? (t.amount / t.quantity).toFixed(2) : "",
     t.amount.toFixed(2),
+    t.notes || "",
   ])
 
   const csvContent = [

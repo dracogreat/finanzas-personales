@@ -33,6 +33,8 @@ model Category {
 model Transaction {
   id          String   @id @default(cuid())
   amount      Float
+  quantity    Float?
+  notes       String?
   description String
   date        DateTime
   type        String   // "income" o "expense"

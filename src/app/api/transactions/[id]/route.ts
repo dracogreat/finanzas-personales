@@ -24,12 +24,14 @@ export async function PUT(
       )
     }
 
-    const { amount, description, date, type, categoryId } = await request.json()
+    const { amount, quantity, notes, description, date, type, categoryId } = await request.json()
 
     const transaction = await prisma.transaction.update({
       where: { id: params.id },
       data: {
         ...(amount && { amount: parseFloat(amount) }),
+        ...(quantity !== undefined && { quantity: quantity ? parseFloat(quantity) : null }),
+        ...(notes !== undefined && { notes: notes || null }),
         ...(description && { description }),
         ...(date && { date: new Date(date) }),
         ...(type && { type }),

@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { amount, description, date, type, categoryId } = await request.json()
+    const { amount, quantity, notes, description, date, type, categoryId } = await request.json()
 
     if (!amount || !description || !date || !type || !categoryId) {
       return NextResponse.json(
@@ -57,6 +57,8 @@ export async function POST(request: Request) {
     const transaction = await prisma.transaction.create({
       data: {
         amount: parseFloat(amount),
+        ...(quantity && { quantity: parseFloat(quantity) }),
+        ...(notes && { notes }),
         description,
         date: new Date(date),
         type,
