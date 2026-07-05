@@ -1,0 +1,361 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
+import { redirect } from "next/navigation"
+import Sidebar from "@/components/Sidebar"
+import { formatCurrency, formatDate } from "@/lib/utils"
+import toast from "react-hot-toast"
+
+type Category = {
+  id: string
+  name: string
+  type: string
+  color: string
+  icon: string
+}
+
+type Transaction = {
+  id: string
+  amount: number
+  description: string
+  date: string
+  type: string
+  categoryId: string
+  category: Category
+}
+
+export default function TransactionsPage() {
+  const { data: session, status } = useSession()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<Transaction | null>(null)
+  const [filter, setFilter] = useState("all")
+  const [form, setForm] = useState({
+    amount: "",
+    description: "",
+    date: new Date().toISOString().split("T")[0],
+    type: "expense",
+    categoryId: "",
+  })
+
+  useEffect(() => {
+    if (status === "unauthenticated") redirect("/login")
+  }, [status])
+
+  useEffect(() => {
+    Promise.all([fetchTransactions(), fetchCategories()])
+  }, [])
+
+  async function fetchTransactions() {
+    try {
+      const res = await fetch("/api/transactions")
+      const data = await res.json()
+      setTransactions(data)
+    } catch {
+      toast.error("Error al cargar transacciones")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function fetchCategories() {
+    try {
+      const res = await fetch("/api/categories")
+      const data = await res.json()
+      setCategories(data)
+    } catch {
+      console.error("Error loading categories")
+    }
+  }
+
+  function resetForm() {
+    setForm({
+      amount: "",
+      description: "",
+      date: new Date().toISOString().split("T")[0],
+      type: "expense",
+      categoryId: "",
+    })
+    setEditing(null)
+    setShowForm(false)
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!form.amount || !form.description || !form.categoryId) {
+      toast.error("Completa todos los campos")
+      return
+    }
+
+    try {
+      const url = editing
+        ? `/api/transactions/${editing.id}`
+        : "/api/transactions"
+      const method = editing ? "PUT" : "POST"
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+
+      if (!res.ok) throw new Error()
+
+      toast.success(editing ? "Transacción actualizada" : "Transacción creada")
+      resetForm()
+      fetchTransactions()
+    } catch {
+      toast.error("Error al guardar transacción")
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("¿Eliminar esta transacción?")) return
+
+    try {
+      const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error()
+      toast.success("Transacción eliminada")
+      fetchTransactions()
+    } catch {
+      toast.error("Error al eliminar transacción")
+    }
+  }
+
+  function handleEdit(t: Transaction) {
+    setEditing(t)
+    setForm({
+      amount: String(t.amount),
+      description: t.description,
+      date: new Date(t.date).toISOString().split("T")[0],
+      type: t.type,
+      categoryId: t.categoryId,
+    })
+    setShowForm(true)
+  }
+
+  const filteredTransactions = filter === "all"
+    ? transactions
+    : transactions.filter((t) => t.type === filter)
+
+  const incomeCategories = categories.filter((c) => c.type === "income")
+  const expenseCategories = categories.filter((c) => c.type === "expense")
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="flex-1 flex flex-col">
+        <header className="bg-white border-b px-4 py-3 flex items-center gap-3 md:hidden">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="font-semibold">Transacciones</h1>
+        </header>
+
+        <main className="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <div className="hidden md:block">
+              <h1 className="text-2xl font-bold text-gray-800">Transacciones</h1>
+              <p className="text-gray-500">Registra tus ingresos y gastos</p>
+            </div>
+            <button
+              onClick={() => { resetForm(); setShowForm(true) }}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+            >
+              + Nueva transacción
+            </button>
+          </div>
+
+          <div className="flex gap-2">
+            {["all", "income", "expense"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                  filter === f
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-600 border hover:bg-gray-50"
+                }`}
+              >
+                {f === "all" ? "Todas" : f === "income" ? "Ingresos" : "Gastos"}
+              </button>
+            ))}
+          </div>
+
+          {showForm && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl w-full max-w-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">
+                    {editing ? "Editar transacción" : "Nueva transacción"}
+                  </h2>
+                  <button onClick={resetForm} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, type: "expense", categoryId: "" })}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        form.type === "expense"
+                          ? "bg-red-100 text-red-700 border border-red-300"
+                          : "bg-gray-50 text-gray-500 border"
+                      }`}
+                    >
+                      💸 Gasto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, type: "income", categoryId: "" })}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        form.type === "income"
+                          ? "bg-green-100 text-green-700 border border-green-300"
+                          : "bg-gray-50 text-gray-500 border"
+                      }`}
+                    >
+                      💰 Ingreso
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                    <select
+                      required
+                      value={form.categoryId}
+                      onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    >
+                      <option value="">Seleccionar categoría</option>
+                      {(form.type === "income" ? incomeCategories : expenseCategories).map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.icon} {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-500">S/</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        value={form.amount}
+                        onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <input
+                      type="text"
+                      required
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="¿En qué gastaste?"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                    <input
+                      type="date"
+                      required
+                      value={form.date}
+                      onChange={(e) => setForm({ ...form, date: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                      {editing ? "Actualizar" : "Guardar"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600" />
+            </div>
+          ) : filteredTransactions.length > 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border divide-y">
+              {filteredTransactions.map((t) => (
+                <div key={t.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-2xl flex-shrink-0">{t.category.icon}</span>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-800 truncate">{t.description}</p>
+                      <p className="text-sm text-gray-400">
+                        {t.category.name} · {formatDate(t.date)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`font-semibold ${t.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                      {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
+                    </span>
+                    <button
+                      onClick={() => handleEdit(t)}
+                      className="text-gray-400 hover:text-gray-600 text-sm p-1"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(t.id)}
+                      className="text-gray-400 hover:text-red-600 text-sm p-1"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 text-gray-400">
+              <p className="text-4xl mb-2">📭</p>
+              <p>No hay transacciones registradas</p>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  )
+}

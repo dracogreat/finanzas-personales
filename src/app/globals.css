@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --income: #22c55e;
+  --expense: #ef4444;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (max-width: 768px) {
+  .sidebar-hidden {
+    transform: translateX(-100%);
+  }
+  .sidebar-visible {
+    transform: translateX(0);
+  }
+}
