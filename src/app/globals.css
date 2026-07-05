@@ -13,6 +13,7 @@
   --text: #1f2937;
   --text-secondary: #6b7280;
   --border: #e5e7eb;
+  --bg-hover: #f3f4f6;
 }
 
 .dark {
@@ -26,6 +27,7 @@
   --text: #f1f5f9;
   --text-secondary: #94a3b8;
   --border: #334155;
+  --bg-hover: #334155;
 }
 
 body {

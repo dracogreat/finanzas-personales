@@ -164,8 +164,8 @@ export default function ReportsPage() {
           <div className="hidden md:block">
             <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Reportes</h1>
             <p style={{ color: "var(--text-secondary)" }}>Analiza tus finanzas</p>
-            </div>
-            <div className="flex items-center gap-3">
+          </div>
+          <div className="flex items-center gap-3">
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
@@ -192,7 +192,6 @@ export default function ReportsPage() {
                 📥 Exportar CSV
               </button>
             </div>
-          </div>
 
           {loading ? (
             <div className="flex justify-center py-12">
