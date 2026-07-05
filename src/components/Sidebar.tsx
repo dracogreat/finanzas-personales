@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -19,6 +20,20 @@ export default function Sidebar({
   onClose: () => void
 }) {
   const pathname = usePathname()
+  const [dark, setDark] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem("darkMode") === "true"
+    setDark(saved)
+    document.documentElement.classList.toggle("dark", saved)
+  }, [])
+
+  function toggleDark() {
+    const next = !dark
+    setDark(next)
+    localStorage.setItem("darkMode", String(next))
+    document.documentElement.classList.toggle("dark", next)
+  }
 
   return (
     <>
@@ -30,15 +45,16 @@ export default function Sidebar({
       )}
       <aside
         className={`
-          fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r
+          fixed md:static inset-y-0 left-0 z-50 w-64
           transform transition-transform duration-200 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:min-h-screen
         `}
+        style={{ backgroundColor: "var(--bg-sidebar)", borderRight: "1px solid var(--border)" }}
       >
-        <div className="p-4 border-b">
-          <h1 className="font-bold text-lg text-indigo-600">💰 Finanzas</h1>
-          <p className="text-sm text-gray-500">Control personal</p>
+        <div className="p-4 border-b" style={{ borderColor: "var(--border)" }}>
+          <h1 className="font-bold text-lg" style={{ color: "var(--primary)" }}>💰 Finanzas</h1>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Control personal</p>
         </div>
 
         <nav className="p-4 space-y-1">
@@ -49,11 +65,13 @@ export default function Sidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-700 font-medium"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors`}
+                style={{
+                  backgroundColor: isActive ? "var(--primary)" : "transparent",
+                  color: isActive ? "#fff" : "var(--text-secondary)",
+                }}
+                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = "rgba(128,128,128,0.1)" } }}
+                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = "transparent" } }}
               >
                 <span>{item.icon}</span>
                 {item.label}
@@ -62,10 +80,21 @@ export default function Sidebar({
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t" style={{ borderColor: "var(--border)" }}>
+          <button
+            onClick={toggleDark}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full transition-colors mb-1"
+            style={{ color: "var(--text-secondary)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(128,128,128,0.1)" }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent" }}
+          >
+            {dark ? "☀️ Modo claro" : "🌙 Modo oscuro"}
+          </button>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 w-full transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 w-full transition-colors"
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)" }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent" }}
           >
             🚪 Cerrar sesión
           </button>

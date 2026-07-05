@@ -34,8 +34,12 @@ export default function TransactionsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [categoryForm, setCategoryForm] = useState({ name: "", type: "expense", color: "#6366f1", icon: "📦" })
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [filter, setFilter] = useState("all")
+  const [search, setSearch] = useState("")
   const [form, setForm] = useState({
     amount: "",
     quantity: "",
@@ -184,9 +188,59 @@ export default function TransactionsPage() {
     setShowForm(true)
   }
 
-  const filteredTransactions = filter === "all"
-    ? transactions
-    : transactions.filter((t) => t.type === filter)
+  async function handleCreateCategory(e: React.FormEvent) {
+    e.preventDefault()
+    if (!categoryForm.name) { toast.error("Nombre requerido"); return }
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(categoryForm),
+      })
+      if (!res.ok) throw new Error()
+      toast.success("Categoría creada")
+      setCategoryForm({ name: "", type: "expense", color: "#6366f1", icon: "📦" })
+      fetchCategories()
+    } catch { toast.error("Error al crear categoría") }
+  }
+
+  async function handleUpdateCategory(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingCategory || !categoryForm.name) { toast.error("Nombre requerido"); return }
+    try {
+      const res = await fetch(`/api/categories/${editingCategory.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(categoryForm),
+      })
+      if (!res.ok) throw new Error()
+      toast.success("Categoría actualizada")
+      setEditingCategory(null)
+      setCategoryForm({ name: "", type: "expense", color: "#6366f1", icon: "📦" })
+      fetchCategories()
+    } catch { toast.error("Error al actualizar categoría") }
+  }
+
+  async function handleDeleteCategory(id: string) {
+    if (!confirm("¿Eliminar esta categoría?")) return
+    try {
+      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || "Error"); return }
+      toast.success("Categoría eliminada")
+      fetchCategories()
+    } catch { toast.error("Error al eliminar categoría") }
+  }
+
+  const iconOptions = ["💰","💵","💳","🏠","🚗","🍕","🎮","📚","🏥","💡","🛍️","🎬","✈️","👕","💻","📱","🐱","🎁","🏋️","☕","🎵","📦"]
+
+  const filteredTransactions = transactions
+    .filter((t) => filter === "all" || t.type === filter)
+    .filter((t) =>
+      !search || t.description.toLowerCase().includes(search.toLowerCase()) ||
+      t.category.name.toLowerCase().includes(search.toLowerCase()) ||
+      (t.notes && t.notes.toLowerCase().includes(search.toLowerCase()))
+    )
 
   const incomeCategories = categories.filter((c) => c.type === "income")
   const expenseCategories = categories.filter((c) => c.type === "expense")
@@ -227,7 +281,7 @@ export default function TransactionsPage() {
             </button>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {["all", "income", "expense"].map((f) => (
               <button
                 key={f}
@@ -241,6 +295,22 @@ export default function TransactionsPage() {
                 {f === "all" ? "Todas" : f === "income" ? "Ingresos" : "Gastos"}
               </button>
             ))}
+            <button
+              onClick={() => { setEditingCategory(null); setCategoryForm({ name: "", type: "expense", color: "#6366f1", icon: "📦" }); setShowCategoryManager(true) }}
+              className="px-3 py-1.5 rounded-lg text-sm text-gray-500 border hover:bg-gray-50 transition-colors"
+            >
+              ⚙️ Categorías
+            </button>
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-2 text-gray-400">🔍</span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full md:w-72 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="Buscar transacciones..."
+            />
           </div>
 
           {showForm && (
@@ -446,6 +516,85 @@ export default function TransactionsPage() {
             <div className="text-center py-16 text-gray-400">
               <p className="text-4xl mb-2">📭</p>
               <p>No hay transacciones registradas</p>
+            </div>
+          )}
+
+          {showCategoryManager && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[85vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Gestionar categorías</h2>
+                  <button onClick={() => setShowCategoryManager(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                </div>
+
+                <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="flex gap-2 mb-4">
+                  <input
+                    type="text"
+                    required
+                    value={categoryForm.name}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Nombre"
+                  />
+                  <select
+                    value={categoryForm.type}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
+                  >
+                    <option value="expense">Gasto</option>
+                    <option value="income">Ingreso</option>
+                  </select>
+                  <input
+                    type="color"
+                    value={categoryForm.color}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                    className="w-10 h-10 rounded cursor-pointer border"
+                  />
+                  <select
+                    value={categoryForm.icon}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
+                    className="px-2 py-2 border border-gray-300 rounded-lg text-sm outline-none"
+                  >
+                    {iconOptions.map((ico) => (
+                      <option key={ico} value={ico}>{ico}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
+                  >
+                    {editingCategory ? "Actualizar" : "Agregar"}
+                  </button>
+                </form>
+
+                <div className="space-y-1">
+                  {categories.map((cat) => (
+                    <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <span>{cat.icon}</span>
+                        <span className="text-sm">{cat.name}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${cat.type === "income" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                          {cat.type === "income" ? "Ingreso" : "Gasto"}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, type: cat.type, color: cat.color, icon: cat.icon }); setShowCategoryManager(true) }}
+                          className="text-gray-400 hover:text-gray-600 text-sm p-1"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="text-gray-400 hover:text-red-600 text-sm p-1"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </main>
