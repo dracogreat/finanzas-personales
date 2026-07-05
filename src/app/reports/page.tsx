@@ -125,7 +125,7 @@ export default function ReportsPage() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white shadow-lg rounded-lg p-3 border text-sm">
+        <div className="shadow-lg rounded-lg p-3 border text-sm" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text)" }}>
           <p className="font-medium mb-1">{label}</p>
           {payload.map((p: any) => (
             <p key={p.name} style={{ color: p.color }}>
@@ -147,24 +147,23 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col">
-        <header className="bg-white border-b px-4 py-3 flex items-center gap-3 md:hidden">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-600">
+        <header className="px-4 py-3 flex items-center gap-3 md:hidden" style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ color: "var(--text-secondary)" }}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="font-semibold">Reportes</h1>
+          <h1 className="font-semibold" style={{ color: "var(--text)" }}>Reportes</h1>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="hidden md:block">
-              <h1 className="text-2xl font-bold text-gray-800">Reportes</h1>
-              <p className="text-gray-500">Analiza tus finanzas</p>
+        <main className="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto">
+          <div className="hidden md:block">
+            <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Reportes</h1>
+            <p style={{ color: "var(--text-secondary)" }}>Analiza tus finanzas</p>
             </div>
             <div className="flex items-center gap-3">
               <select
@@ -202,16 +201,16 @@ export default function ReportsPage() {
           ) : transactions.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white rounded-xl p-6 shadow-sm border">
-                  <p className="text-sm text-gray-500">Ingresos</p>
+                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ingresos</p>
                   <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
                 </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border">
-                  <p className="text-sm text-gray-500">Gastos</p>
+                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Gastos</p>
                   <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
                 </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border">
-                  <p className="text-sm text-gray-500">Balance</p>
+                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Balance</p>
                   <p className={`text-2xl font-bold ${totalIncome - totalExpenses >= 0 ? "text-indigo-600" : "text-red-600"}`}>
                     {formatCurrency(totalIncome - totalExpenses)}
                   </p>
@@ -219,8 +218,8 @@ export default function ReportsPage() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl p-6 shadow-sm border">
-                  <h2 className="font-semibold text-gray-800 mb-4">Gastos por categoría</h2>
+                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Gastos por categoría</h2>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
@@ -239,7 +238,7 @@ export default function ReportsPage() {
                   </ResponsiveContainer>
                   <div className="grid grid-cols-2 gap-1 mt-3">
                     {pieData.map((item) => (
-                      <div key={item.name} className="flex items-center gap-2 text-sm text-gray-600">
+                      <div key={item.name} className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
                         <span className="truncate">{item.name}: {formatCurrency(item.value)}</span>
                       </div>
@@ -247,8 +246,8 @@ export default function ReportsPage() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-6 shadow-sm border">
-                  <h2 className="font-semibold text-gray-800 mb-4">Evolución diaria</h2>
+                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Evolución diaria</h2>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={lineData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -263,8 +262,8 @@ export default function ReportsPage() {
               </div>
 
               {!selectedMonth && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border">
-                  <h2 className="font-semibold text-gray-800 mb-4">Ingresos vs Gastos mensuales</h2>
+                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Ingresos vs Gastos mensuales</h2>
                   <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={monthlyBarData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -278,12 +277,12 @@ export default function ReportsPage() {
                 </div>
               )}
 
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <h2 className="font-semibold text-gray-800 mb-4">Resumen de transacciones</h2>
+              <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Resumen de transacciones</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b text-gray-500">
+                      <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                         <th className="text-left py-2 px-2">Fecha</th>
                         <th className="text-left py-2 px-2">Tipo</th>
                         <th className="text-left py-2 px-2">Categoría</th>
@@ -293,8 +292,10 @@ export default function ReportsPage() {
                     </thead>
                     <tbody>
                       {transactions.slice(0, 20).map((t) => (
-                        <tr key={t.id} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-2 text-gray-500">
+                        <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}>
+                          <td className="py-2 px-2" style={{ color: "var(--text-secondary)" }}>
                             {new Date(t.date).toLocaleDateString("es-PE")}
                           </td>
                           <td className="py-2 px-2">
@@ -305,7 +306,7 @@ export default function ReportsPage() {
                             </span>
                           </td>
                           <td className="py-2 px-2">{t.category.icon} {t.category.name}</td>
-                          <td className="py-2 px-2 text-gray-600">{t.description}</td>
+                          <td className="py-2 px-2" style={{ color: "var(--text)" }}>{t.description}</td>
                           <td className={`py-2 px-2 text-right font-medium ${
                             t.type === "income" ? "text-green-600" : "text-red-600"
                           }`}>
@@ -319,7 +320,7 @@ export default function ReportsPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16" style={{ color: "var(--text-secondary)" }}>
               <p className="text-4xl mb-2">📊</p>
               <p>No hay datos para mostrar en este período</p>
             </div>

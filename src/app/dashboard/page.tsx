@@ -96,7 +96,7 @@ export default function DashboardPage() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white shadow-lg rounded-lg p-3 border text-sm">
+        <div className="shadow-lg rounded-lg p-3 border text-sm" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text)" }}>
           <p className="font-medium">{label}</p>
           {payload.map((p: any) => (
             <p key={p.name} style={{ color: p.color }}>
@@ -110,48 +110,49 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col">
-        <header className="bg-white border-b px-4 py-3 flex items-center gap-3 md:hidden">
+        <header className="px-4 py-3 flex items-center gap-3 md:hidden" style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-gray-600 hover:text-gray-900"
+            style={{ color: "var(--text-secondary)" }}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="font-semibold">Dashboard</h1>
+          <h1 className="font-semibold" style={{ color: "var(--text)" }}>Dashboard</h1>
         </header>
 
         <main className="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto">
           <div className="hidden md:block">
-            <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-            <p className="text-gray-500">Bienvenido, {session?.user?.name || "usuario"}</p>
+            <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Dashboard</h1>
+            <p style={{ color: "var(--text-secondary)" }}>Bienvenido, {session?.user?.name || "usuario"}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <p className="text-sm text-gray-500">Ingresos totales</p>
+            <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ingresos totales</p>
               <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <p className="text-sm text-gray-500">Gastos totales</p>
+            <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Gastos totales</p>
               <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <p className="text-sm text-gray-500">Balance</p>
-              <p className={`text-2xl font-bold ${balance >= 0 ? "text-indigo-600" : "text-red-600"}`}>
+            <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Balance</p>
+              <p className={`text-2xl font-bold ${balance >= 0 ? "" : ""}`}
+                style={{ color: balance >= 0 ? "var(--primary)" : "var(--expense)" }}>
                 {formatCurrency(balance)}
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h2 className="font-semibold text-gray-800 mb-4">Gastos por categoría</h2>
+            <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Gastos por categoría</h2>
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -184,8 +185,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h2 className="font-semibold text-gray-800 mb-4">Ingresos vs Gastos</h2>
+            <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Ingresos vs Gastos</h2>
               {barData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={barData}>
@@ -203,27 +204,27 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <h2 className="font-semibold text-gray-800 mb-4">Últimas transacciones</h2>
+          <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+            <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Últimas transacciones</h2>
             {recentTransactions.length > 0 ? (
               <div className="space-y-3">
                 {recentTransactions.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div key={t.id} className="flex items-center justify-between py-2" style={{ borderBottom: "1px solid var(--border)" }}>
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{t.category.icon}</span>
                       <div>
-                        <p className="font-medium text-gray-800">{t.description}</p>
-                        <p className="text-sm text-gray-400">{t.category.name}</p>
+                        <p className="font-medium" style={{ color: "var(--text)" }}>{t.description}</p>
+                        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t.category.name}</p>
                       </div>
                     </div>
-                    <span className={`font-semibold ${t.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                    <span className="font-semibold" style={{ color: t.type === "income" ? "var(--income)" : "var(--expense)" }}>
                       {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 text-center py-8">
+              <p className="text-center py-8" style={{ color: "var(--text-secondary)" }}>
                 No hay transacciones aún. Agrega una desde Transacciones.
               </p>
             )}

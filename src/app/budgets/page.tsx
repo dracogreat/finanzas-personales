@@ -134,24 +134,24 @@ export default function BudgetsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col">
-        <header className="bg-white border-b px-4 py-3 flex items-center gap-3 md:hidden">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-600">
+        <header className="px-4 py-3 flex items-center gap-3 md:hidden" style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ color: "var(--text-secondary)" }}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="font-semibold">Presupuestos</h1>
+          <h1 className="font-semibold" style={{ color: "var(--text)" }}>Presupuestos</h1>
         </header>
 
         <main className="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto">
           <div className="flex items-center justify-between">
             <div className="hidden md:block">
-              <h1 className="text-2xl font-bold text-gray-800">Presupuestos</h1>
-              <p className="text-gray-500">Establece límites mensuales por categoría</p>
+              <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Presupuestos</h1>
+              <p style={{ color: "var(--text-secondary)" }}>Establece límites mensuales por categoría</p>
             </div>
             {availableCategories.length > 0 && (
               <button
@@ -166,16 +166,22 @@ export default function BudgetsPage() {
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => changeMonth(-1)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: "var(--text-secondary)" }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
             >
               ◀
             </button>
-            <h2 className="text-lg font-semibold text-gray-700 min-w-[200px] text-center">
+            <h2 className="text-lg font-semibold min-w-[200px] text-center" style={{ color: "var(--text)" }}>
               {months[currentMonth - 1]} {currentYear}
             </h2>
             <button
               onClick={() => changeMonth(1)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: "var(--text-secondary)" }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
             >
               ▶
             </button>
@@ -192,18 +198,21 @@ export default function BudgetsPage() {
                 const isOver = budget.spent > budget.amount
 
                 return (
-                  <div key={budget.id} className="bg-white rounded-xl p-5 shadow-sm border">
+                  <div key={budget.id} className="rounded-xl p-5 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{budget.category.icon}</span>
                         <div>
-                          <p className="font-medium text-gray-800">{budget.category.name}</p>
-                          <p className="text-xs text-gray-400">Presupuesto: {formatCurrency(budget.amount)}</p>
+                          <p className="font-medium" style={{ color: "var(--text)" }}>{budget.category.name}</p>
+                          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Presupuesto: {formatCurrency(budget.amount)}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => handleDelete(budget.id)}
-                        className="text-gray-400 hover:text-red-600 text-sm"
+                        className="text-sm"
+                        style={{ color: "var(--text-secondary)" }}
+                        onMouseOver={(e) => e.currentTarget.style.color = "var(--expense)"}
+                        onMouseOut={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
                       >
                         🗑️
                       </button>
@@ -211,14 +220,14 @@ export default function BudgetsPage() {
 
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
-                        <span className={isOver ? "text-red-600 font-medium" : "text-gray-600"}>
+                        <span className="font-medium" style={{ color: isOver ? "var(--expense)" : "var(--text-secondary)" }}>
                           Gastado: {formatCurrency(budget.spent)}
                         </span>
-                        <span className={isOver ? "text-red-600 font-medium" : "text-green-600"}>
+                        <span className="font-medium" style={{ color: isOver ? "var(--expense)" : "var(--income)" }}>
                           {isOver ? `-${formatCurrency(Math.abs(budget.remaining))}` : `${formatCurrency(budget.remaining)} disponible`}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2.5">
+                      <div className="w-full rounded-full h-2.5" style={{ backgroundColor: "var(--bg-hover)" }}>
                         <div
                           className={`h-2.5 rounded-full transition-all ${
                             isOver ? "bg-red-500" : percentage > 80 ? "bg-yellow-500" : "bg-green-500"
@@ -232,7 +241,7 @@ export default function BudgetsPage() {
               })}
             </div>
           ) : (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16" style={{ color: "var(--text-secondary)" }}>
               <p className="text-4xl mb-2">🎯</p>
               <p>No hay presupuestos para este mes</p>
               <p className="text-sm">Agrega uno para empezar a controlar tus gastos</p>
@@ -241,20 +250,21 @@ export default function BudgetsPage() {
 
           {showForm && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl w-full max-w-md p-6">
+              <div className="rounded-xl w-full max-w-md p-6" style={{ backgroundColor: "var(--bg-card)" }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Nuevo presupuesto</h2>
-                  <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                  <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Nuevo presupuesto</h2>
+                  <button onClick={() => setShowForm(false)} className="text-xl" style={{ color: "var(--text-secondary)" }}>✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Categoría</label>
                     <select
                       required
                       value={form.categoryId}
                       onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      style={{ backgroundColor: "var(--bg)", color: "var(--text)", borderColor: "var(--border)" }}
+                      className="w-full px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                     >
                       <option value="">Seleccionar categoría</option>
                       {availableCategories.map((c) => (
@@ -264,9 +274,9 @@ export default function BudgetsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Límite mensual</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Límite mensual</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-gray-500">S/</span>
+                      <span className="absolute left-3 top-2.5" style={{ color: "var(--text-secondary)" }}>S/</span>
                       <input
                         type="number"
                         step="0.01"
@@ -274,7 +284,8 @@ export default function BudgetsPage() {
                         required
                         value={form.amount}
                         onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        style={{ backgroundColor: "var(--bg)", color: "var(--text)", borderColor: "var(--border)" }}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                         placeholder="0.00"
                       />
                     </div>
@@ -284,7 +295,8 @@ export default function BudgetsPage() {
                     <button
                       type="button"
                       onClick={() => setShowForm(false)}
-                      className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                      style={{ color: "var(--text)", borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
+                      className="flex-1 py-2.5 border rounded-lg transition-colors"
                     >
                       Cancelar
                     </button>

@@ -247,219 +247,186 @@ export default function TransactionsPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--bg)" }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderColor: "var(--primary)" }} />
       </div>
     )
   }
 
+  const s = (el: string) => ({})
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col">
-        <header className="bg-white border-b px-4 py-3 flex items-center gap-3 md:hidden">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-600">
+        <header style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }} className="px-4 py-3 flex items-center gap-3 md:hidden">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ color: "var(--text-secondary)" }}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="font-semibold">Transacciones</h1>
+          <h1 className="font-semibold" style={{ color: "var(--text)" }}>Transacciones</h1>
         </header>
 
         <main className="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto">
           <div className="flex items-center justify-between">
             <div className="hidden md:block">
-              <h1 className="text-2xl font-bold text-gray-800">Transacciones</h1>
-              <p className="text-gray-500">Registra tus ingresos y gastos</p>
+              <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Transacciones</h1>
+              <p style={{ color: "var(--text-secondary)" }}>Registra tus ingresos y gastos</p>
             </div>
             <button
               onClick={() => { resetForm(); setShowForm(true) }}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+              className="text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ backgroundColor: "var(--primary)" }}
             >
               + Nueva transacción
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {["all", "income", "expense"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  filter === f
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white text-gray-600 border hover:bg-gray-50"
-                }`}
+                className="px-3 py-1.5 rounded-lg text-sm transition-colors border"
+                style={{
+                  backgroundColor: filter === f ? "var(--primary)" : "var(--bg-card)",
+                  color: filter === f ? "#fff" : "var(--text-secondary)",
+                  borderColor: filter === f ? "var(--primary)" : "var(--border)",
+                }}
               >
                 {f === "all" ? "Todas" : f === "income" ? "Ingresos" : "Gastos"}
               </button>
             ))}
             <button
               onClick={() => { setEditingCategory(null); setCategoryForm({ name: "", type: "expense", color: "#6366f1", icon: "📦" }); setShowCategoryManager(true) }}
-              className="px-3 py-1.5 rounded-lg text-sm text-gray-500 border hover:bg-gray-50 transition-colors"
+              className="px-3 py-1.5 rounded-lg text-sm border transition-colors"
+              style={{ color: "var(--text-secondary)", borderColor: "var(--border)", backgroundColor: "var(--bg-card)" }}
             >
               ⚙️ Categorías
             </button>
-          </div>
-          <div className="relative">
-            <span className="absolute left-3 top-2 text-gray-400">🔍</span>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full md:w-72 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="Buscar transacciones..."
-            />
+            <div className="relative flex-1 min-w-[200px] max-w-xs">
+              <span className="absolute left-3 top-2" style={{ color: "var(--text-secondary)" }}>🔍</span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg text-sm outline-none"
+                style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }}
+                placeholder="Buscar transacciones..."
+              />
+            </div>
           </div>
 
           {showForm && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+              <div className="rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "var(--bg-card)" }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">
+                  <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
                     {editing ? "Editar transacción" : "Nueva transacción"}
                   </h2>
-                  <button onClick={resetForm} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                  <button onClick={resetForm} className="text-xl" style={{ color: "var(--text-secondary)" }}>✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, type: "expense", categoryId: "" })}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        form.type === "expense"
-                          ? "bg-red-100 text-red-700 border border-red-300"
-                          : "bg-gray-50 text-gray-500 border"
-                      }`}
-                    >
+                    <button type="button" onClick={() => setForm({ ...form, type: "expense", categoryId: "" })}
+                      className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
+                      style={{
+                        backgroundColor: form.type === "expense" ? "rgba(239,68,68,0.15)" : "var(--bg)",
+                        color: form.type === "expense" ? "#ef4444" : "var(--text-secondary)",
+                        borderColor: form.type === "expense" ? "#ef4444" : "var(--border)",
+                      }}>
                       💸 Gasto
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, type: "income", categoryId: "" })}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        form.type === "income"
-                          ? "bg-green-100 text-green-700 border border-green-300"
-                          : "bg-gray-50 text-gray-500 border"
-                      }`}
-                    >
+                    <button type="button" onClick={() => setForm({ ...form, type: "income", categoryId: "" })}
+                      className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
+                      style={{
+                        backgroundColor: form.type === "income" ? "rgba(34,197,94,0.15)" : "var(--bg)",
+                        color: form.type === "income" ? "#22c55e" : "var(--text-secondary)",
+                        borderColor: form.type === "income" ? "#22c55e" : "var(--border)",
+                      }}>
                       💰 Ingreso
                     </button>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                    <select
-                      required
-                      value={form.categoryId}
-                      onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    >
+                    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Categoría</label>
+                    <select required value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg outline-none"
+                      style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
                       <option value="">Seleccionar categoría</option>
                       {(form.type === "income" ? incomeCategories : expenseCategories).map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.icon} {c.name}
-                        </option>
+                        <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
                       ))}
                     </select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={form.quantity}
-                        onChange={(e) => handleQuantityChange(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                        placeholder="0"
-                      />
+                      <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Cantidad</label>
+                      <input type="number" min="0" step="1" value={form.quantity} onChange={(e) => handleQuantityChange(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg outline-none"
+                        style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}
+                        placeholder="0" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Precio Unitario</label>
+                      <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Precio Unitario</label>
                       <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-gray-500">S/</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={form.unitPrice}
-                          onChange={(e) => handleUnitPriceChange(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                          placeholder="0.00"
-                        />
+                        <span className="absolute left-3 top-2.5" style={{ color: "var(--text-secondary)" }}>S/</span>
+                        <input type="number" min="0" step="0.01" value={form.unitPrice} onChange={(e) => handleUnitPriceChange(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-lg outline-none"
+                          style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}
+                          placeholder="0.00" />
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Total</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Total</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-gray-500">S/</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        required
-                        value={form.amount}
-                        onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2.5 border border-indigo-300 bg-indigo-50 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
-                        placeholder="0.00"
-                      />
+                      <span className="absolute left-3 top-2.5" style={{ color: "var(--text-secondary)" }}>S/</span>
+                      <input type="number" step="0.01" min="0" required value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-lg font-semibold outline-none"
+                        style={{ border: "2px solid var(--primary)", backgroundColor: "rgba(99,102,241,0.08)", color: "var(--text)" }}
+                        placeholder="0.00" />
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">Se calcula automáticamente si pones cantidad y precio unitario</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>Se calcula automáticamente si pones cantidad y precio unitario</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                    <input
-                      type="text"
-                      required
-                      value={form.description}
-                      onChange={(e) => setForm({ ...form, description: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="¿Qué compraste?"
-                    />
+                    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Descripción</label>
+                    <input type="text" required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg outline-none"
+                      style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}
+                      placeholder="¿Qué compraste?" />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-                    <textarea
-                      value={form.notes}
-                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                      placeholder="Detalles adicionales..."
-                      rows={2}
-                    />
+                    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Observaciones</label>
+                    <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg outline-none resize-none"
+                      style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}
+                      placeholder="Detalles adicionales..." rows={2} />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-                    <input
-                      type="date"
-                      required
-                      value={form.date}
-                      onChange={(e) => setForm({ ...form, date: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    />
+                    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Fecha</label>
+                    <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg outline-none"
+                      style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }} />
                   </div>
 
                   <div className="flex gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
+                    <button type="button" onClick={resetForm}
+                      className="flex-1 py-2.5 rounded-lg transition-colors border"
+                      style={{ borderColor: "var(--border)", color: "var(--text)" }}>
                       Cancelar
                     </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-                    >
+                    <button type="submit"
+                      className="flex-1 py-2.5 text-white rounded-lg font-medium transition-colors"
+                      style={{ backgroundColor: "var(--primary)" }}>
                       {editing ? "Actualizar" : "Guardar"}
                     </button>
                   </div>
@@ -470,50 +437,41 @@ export default function TransactionsPage() {
 
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600" />
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: "var(--primary)" }} />
             </div>
           ) : filteredTransactions.length > 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border divide-y">
+            <div className="rounded-xl shadow-sm border divide-y" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
               {filteredTransactions.map((t) => {
                 const unitPrice = t.quantity && t.quantity > 0 ? t.amount / t.quantity : null
                 return (
-                  <div key={t.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                  <div key={t.id} className="flex items-center justify-between p-4 transition-colors" style={{ borderColor: "var(--border)" }}>
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <span className="text-2xl flex-shrink-0">{t.category.icon}</span>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-800 truncate">{t.description}</p>
-                        <p className="text-sm text-gray-400">
+                        <p className="font-medium truncate" style={{ color: "var(--text)" }}>{t.description}</p>
+                        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                           {t.category.name} · {formatDate(t.date)}
                           {t.quantity && unitPrice ? ` · ${t.quantity} und. x S/ ${unitPrice.toFixed(2)}` : ""}
                         </p>
                         {t.notes && (
-                          <p className="text-xs text-gray-400 italic truncate">📝 {t.notes}</p>
+                          <p className="text-xs italic truncate" style={{ color: "var(--text-secondary)" }}>📝 {t.notes}</p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                      <span className={`font-semibold ${t.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                      <span className={`font-semibold ${t.type === "income" ? "" : ""}`}
+                        style={{ color: t.type === "income" ? "var(--income)" : "var(--expense)" }}>
                         {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
                       </span>
-                      <button
-                        onClick={() => handleEdit(t)}
-                        className="text-gray-400 hover:text-gray-600 text-sm p-1"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(t.id)}
-                        className="text-gray-400 hover:text-red-600 text-sm p-1"
-                      >
-                        🗑️
-                      </button>
+                      <button onClick={() => handleEdit(t)} className="text-sm p-1" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                      <button onClick={() => handleDelete(t.id)} className="text-sm p-1" style={{ color: "var(--text-secondary)" }}>🗑️</button>
                     </div>
                   </div>
                 )
               })}
             </div>
           ) : (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16" style={{ color: "var(--text-secondary)" }}>
               <p className="text-4xl mb-2">📭</p>
               <p>No hay transacciones registradas</p>
             </div>
@@ -521,75 +479,56 @@ export default function TransactionsPage() {
 
           {showCategoryManager && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[85vh] overflow-y-auto">
+              <div className="rounded-xl w-full max-w-md p-6 max-h-[85vh] overflow-y-auto" style={{ backgroundColor: "var(--bg-card)" }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Gestionar categorías</h2>
-                  <button onClick={() => setShowCategoryManager(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                  <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Gestionar categorías</h2>
+                  <button onClick={() => setShowCategoryManager(false)} className="text-xl" style={{ color: "var(--text-secondary)" }}>✕</button>
                 </div>
 
-                <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="flex gap-2 mb-4">
-                  <input
-                    type="text"
-                    required
-                    value={categoryForm.name}
+                <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="flex flex-wrap gap-2 mb-4">
+                  <input type="text" required value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="Nombre"
-                  />
-                  <select
-                    value={categoryForm.type}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
-                  >
+                    className="flex-1 min-w-[120px] px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}
+                    placeholder="Nombre" />
+                  <select value={categoryForm.type} onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}
+                    className="px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
                     <option value="expense">Gasto</option>
                     <option value="income">Ingreso</option>
                   </select>
-                  <input
-                    type="color"
-                    value={categoryForm.color}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                    className="w-10 h-10 rounded cursor-pointer border"
-                  />
-                  <select
-                    value={categoryForm.icon}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
-                    className="px-2 py-2 border border-gray-300 rounded-lg text-sm outline-none"
-                  >
-                    {iconOptions.map((ico) => (
-                      <option key={ico} value={ico}>{ico}</option>
-                    ))}
+                  <input type="color" value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                    className="w-10 h-10 rounded cursor-pointer border" style={{ borderColor: "var(--border)" }} />
+                  <select value={categoryForm.icon} onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
+                    className="px-2 py-2 rounded-lg text-sm outline-none"
+                    style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
+                    {iconOptions.map((ico) => (<option key={ico} value={ico}>{ico}</option>))}
                   </select>
-                  <button
-                    type="submit"
-                    className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
-                  >
+                  <button type="submit" className="px-3 py-2 text-white rounded-lg text-sm transition-colors"
+                    style={{ backgroundColor: "var(--primary)" }}>
                     {editingCategory ? "Actualizar" : "Agregar"}
                   </button>
                 </form>
 
                 <div className="space-y-1">
                   {categories.map((cat) => (
-                    <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                    <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg" style={{ color: "var(--text)" }}>
                       <div className="flex items-center gap-2">
                         <span>{cat.icon}</span>
                         <span className="text-sm">{cat.name}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${cat.type === "income" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <span className="text-xs px-1.5 py-0.5 rounded"
+                          style={{
+                            backgroundColor: cat.type === "income" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+                            color: cat.type === "income" ? "#22c55e" : "#ef4444",
+                          }}>
                           {cat.type === "income" ? "Ingreso" : "Gasto"}
                         </span>
                       </div>
                       <div className="flex gap-1">
-                        <button
-                          onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, type: cat.type, color: cat.color, icon: cat.icon }); setShowCategoryManager(true) }}
-                          className="text-gray-400 hover:text-gray-600 text-sm p-1"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCategory(cat.id)}
-                          className="text-gray-400 hover:text-red-600 text-sm p-1"
-                        >
-                          🗑️
-                        </button>
+                        <button onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, type: cat.type, color: cat.color, icon: cat.icon }); setShowCategoryManager(true) }}
+                          className="text-sm p-1" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                        <button onClick={() => handleDeleteCategory(cat.id)}
+                          className="text-sm p-1" style={{ color: "var(--text-secondary)" }}>🗑️</button>
                       </div>
                     </div>
                   ))}
