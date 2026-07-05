@@ -10,6 +10,7 @@ const menuItems = [
   { href: "/transactions", label: "Transacciones", icon: "💳" },
   { href: "/budgets", label: "Presupuestos", icon: "🎯" },
   { href: "/goals", label: "Metas", icon: "🎯" },
+  { href: "/import", label: "Importar", icon: "📥" },
   { href: "/reports", label: "Reportes", icon: "📈" },
 ]
 

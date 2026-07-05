@@ -6,6 +6,7 @@ export const config = {
     "/transactions/:path*",
     "/budgets/:path*",
     "/goals/:path*",
+    "/import/:path*",
     "/reports/:path*",
   ],
 }
