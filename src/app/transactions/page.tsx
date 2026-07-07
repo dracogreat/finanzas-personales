@@ -40,13 +40,21 @@ export default function TransactionsPage() {
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [filter, setFilter] = useState("all")
   const [search, setSearch] = useState("")
+  function toLocalDate(date: Date | string) {
+    const d = typeof date === "string" ? new Date(date) : date
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    return `${y}-${m}-${day}`
+  }
+
   const [form, setForm] = useState({
     amount: "",
     quantity: "",
     unitPrice: "",
     notes: "",
     description: "",
-    date: new Date().toISOString().split("T")[0],
+    date: toLocalDate(new Date()),
     type: "expense",
     categoryId: "",
   })
@@ -113,7 +121,7 @@ export default function TransactionsPage() {
       unitPrice: "",
       notes: "",
       description: "",
-      date: new Date().toISOString().split("T")[0],
+      date: toLocalDate(new Date()),
       type: "expense",
       categoryId: "",
     })
@@ -181,7 +189,7 @@ export default function TransactionsPage() {
       unitPrice,
       notes: t.notes || "",
       description: t.description,
-      date: new Date(t.date).toISOString().split("T")[0],
+      date: toLocalDate(t.date),
       type: t.type,
       categoryId: t.categoryId,
     })

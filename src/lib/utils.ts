@@ -1,5 +1,4 @@
-import { format, startOfMonth, endOfMonth } from "date-fns"
-import { es } from "date-fns/locale"
+import { startOfMonth, endOfMonth } from "date-fns"
 
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("es-PE", {
