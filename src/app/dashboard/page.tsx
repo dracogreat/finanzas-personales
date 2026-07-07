@@ -63,7 +63,11 @@ export default function DashboardPage() {
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + t.amount, 0)
 
-  const balance = totalIncome - totalExpenses
+  const totalSavings = transactions
+    .filter((t) => t.type === "saving")
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  const balance = totalIncome - totalExpenses - totalSavings
 
   const expensesByCategory = transactions
     .filter((t) => t.type === "expense")
@@ -78,13 +82,14 @@ export default function DashboardPage() {
 
   const pieData = Object.values(expensesByCategory)
 
-  const monthlyData = transactions.reduce<Record<string, { month: string; income: number; expense: number }>>((acc, t) => {
+  const monthlyData = transactions.reduce<Record<string, { month: string; income: number; expense: number; saving: number }>>((acc, t) => {
     const date = new Date(t.date)
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
     if (!acc[key]) {
-      acc[key] = { month: key, income: 0, expense: 0 }
+      acc[key] = { month: key, income: 0, expense: 0, saving: 0 }
     }
     if (t.type === "income") acc[key].income += t.amount
+    else if (t.type === "saving") acc[key].saving += t.amount
     else acc[key].expense += t.amount
     return acc
   }, {})
@@ -132,18 +137,22 @@ export default function DashboardPage() {
             <p style={{ color: "var(--text-secondary)" }}>Bienvenido, {session?.user?.name || "usuario"}</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ingresos totales</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ingresos</p>
               <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
             </div>
             <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Gastos totales</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Gastos</p>
               <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
             </div>
             <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Balance</p>
-              <p className={`text-2xl font-bold ${balance >= 0 ? "" : ""}`}
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ahorro</p>
+              <p className="text-2xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(totalSavings)}</p>
+            </div>
+            <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Disponible</p>
+              <p className="text-2xl font-bold"
                 style={{ color: balance >= 0 ? "var(--primary)" : "var(--expense)" }}>
                 {formatCurrency(balance)}
               </p>
@@ -196,6 +205,7 @@ export default function DashboardPage() {
                     <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="income" name="Ingresos" fill="#22c55e" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="expense" name="Gastos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="saving" name="Ahorro" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -217,7 +227,7 @@ export default function DashboardPage() {
                         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t.category.name}</p>
                       </div>
                     </div>
-                    <span className="font-semibold" style={{ color: t.type === "income" ? "var(--income)" : "var(--expense)" }}>
+                    <span className="font-semibold" style={{ color: t.type === "income" ? "var(--income)" : t.type === "saving" ? "#f59e0b" : "var(--expense)" }}>
                       {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
                     </span>
                   </div>

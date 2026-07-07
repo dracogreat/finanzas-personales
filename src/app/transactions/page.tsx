@@ -252,6 +252,7 @@ export default function TransactionsPage() {
 
   const incomeCategories = categories.filter((c) => c.type === "income")
   const expenseCategories = categories.filter((c) => c.type === "expense")
+  const savingCategories = categories.filter((c) => c.type === "saving")
 
   if (status === "loading") {
     return (
@@ -293,7 +294,7 @@ export default function TransactionsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {["all", "income", "expense"].map((f) => (
+            {["all", "income", "expense", "saving"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -304,7 +305,7 @@ export default function TransactionsPage() {
                   borderColor: filter === f ? "var(--primary)" : "var(--border)",
                 }}
               >
-                {f === "all" ? "Todas" : f === "income" ? "Ingresos" : "Gastos"}
+                {f === "all" ? "Todas" : f === "income" ? "Ingresos" : f === "saving" ? "Ahorros" : "Gastos"}
               </button>
             ))}
             <button
@@ -348,6 +349,15 @@ export default function TransactionsPage() {
                       }}>
                       💸 Gasto
                     </button>
+                    <button type="button" onClick={() => setForm({ ...form, type: "saving", categoryId: "" })}
+                      className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
+                      style={{
+                        backgroundColor: form.type === "saving" ? "rgba(245,158,11,0.15)" : "var(--bg)",
+                        color: form.type === "saving" ? "#f59e0b" : "var(--text-secondary)",
+                        borderColor: form.type === "saving" ? "#f59e0b" : "var(--border)",
+                      }}>
+                      🐷 Ahorro
+                    </button>
                     <button type="button" onClick={() => setForm({ ...form, type: "income", categoryId: "" })}
                       className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
                       style={{
@@ -365,7 +375,7 @@ export default function TransactionsPage() {
                       className="w-full px-4 py-2.5 rounded-lg outline-none"
                       style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
                       <option value="">Seleccionar categoría</option>
-                      {(form.type === "income" ? incomeCategories : expenseCategories).map((c) => (
+                      {(form.type === "income" ? incomeCategories : form.type === "saving" ? savingCategories : expenseCategories).map((c) => (
                         <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
                       ))}
                     </select>
@@ -467,8 +477,8 @@ export default function TransactionsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                      <span className={`font-semibold ${t.type === "income" ? "" : ""}`}
-                        style={{ color: t.type === "income" ? "var(--income)" : "var(--expense)" }}>
+                      <span className="font-semibold"
+                        style={{ color: t.type === "income" ? "var(--income)" : t.type === "saving" ? "#f59e0b" : "var(--expense)" }}>
                         {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
                       </span>
                       <button onClick={() => handleEdit(t)} className="text-sm p-1" style={{ color: "var(--text-secondary)" }}>✏️</button>
@@ -504,6 +514,7 @@ export default function TransactionsPage() {
                     style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
                     <option value="expense">Gasto</option>
                     <option value="income">Ingreso</option>
+                    <option value="saving">Ahorro</option>
                   </select>
                   <input type="color" value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
                     className="w-10 h-10 rounded cursor-pointer border" style={{ borderColor: "var(--border)" }} />
@@ -526,10 +537,10 @@ export default function TransactionsPage() {
                         <span className="text-sm">{cat.name}</span>
                         <span className="text-xs px-1.5 py-0.5 rounded"
                           style={{
-                            backgroundColor: cat.type === "income" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-                            color: cat.type === "income" ? "#22c55e" : "#ef4444",
+                            backgroundColor: cat.type === "income" ? "rgba(34,197,94,0.15)" : cat.type === "saving" ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)",
+                            color: cat.type === "income" ? "#22c55e" : cat.type === "saving" ? "#f59e0b" : "#ef4444",
                           }}>
-                          {cat.type === "income" ? "Ingreso" : "Gasto"}
+                          {cat.type === "income" ? "Ingreso" : cat.type === "saving" ? "Ahorro" : "Gasto"}
                         </span>
                       </div>
                       <div className="flex gap-1">

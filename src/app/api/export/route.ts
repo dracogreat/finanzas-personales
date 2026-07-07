@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   const headers = ["Fecha", "Tipo", "Categoría", "Descripción", "Cantidad", "P. Unitario", "Total", "Observaciones"]
   const rows = transactions.map((t) => [
     new Date(t.date).toLocaleDateString("es-PE"),
-    t.type === "income" ? "Ingreso" : "Gasto",
+    t.type === "income" ? "Ingreso" : t.type === "saving" ? "Ahorro" : "Gasto",
     t.category.name,
     t.description,
     t.quantity ? String(t.quantity) : "",

@@ -87,6 +87,8 @@ export default function ReportsPage() {
 
   const totalIncome = transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0)
   const totalExpenses = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0)
+  const totalSavings = transactions.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+  const totalBalance = totalIncome - totalExpenses - totalSavings
 
   const byCategory = transactions
     .filter((t) => t.type === "expense")
@@ -99,21 +101,23 @@ export default function ReportsPage() {
 
   const pieData = Object.values(byCategory).sort((a, b) => b.value - a.value)
 
-  const byDay = transactions.reduce<Record<string, { date: string; income: number; expense: number }>>((acc, t) => {
+  const byDay = transactions.reduce<Record<string, { date: string; income: number; expense: number; saving: number }>>((acc, t) => {
     const d = new Date(t.date).toISOString().split("T")[0]
-    if (!acc[d]) acc[d] = { date: d, income: 0, expense: 0 }
+    if (!acc[d]) acc[d] = { date: d, income: 0, expense: 0, saving: 0 }
     if (t.type === "income") acc[d].income += t.amount
+    else if (t.type === "saving") acc[d].saving += t.amount
     else acc[d].expense += t.amount
     return acc
   }, {})
 
   const lineData = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
 
-  const byMonth = transactions.reduce<Record<string, { month: string; income: number; expense: number }>>((acc, t) => {
+  const byMonth = transactions.reduce<Record<string, { month: string; income: number; expense: number; saving: number }>>((acc, t) => {
     const d = new Date(t.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-    if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0 }
+    if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0 }
     if (t.type === "income") acc[key].income += t.amount
+    else if (t.type === "saving") acc[key].saving += t.amount
     else acc[key].expense += t.amount
     return acc
   }, {})
@@ -199,7 +203,7 @@ export default function ReportsPage() {
             </div>
           ) : transactions.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ingresos</p>
                   <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
@@ -209,9 +213,13 @@ export default function ReportsPage() {
                   <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
                 </div>
                 <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Balance</p>
-                  <p className={`text-2xl font-bold ${totalIncome - totalExpenses >= 0 ? "text-indigo-600" : "text-red-600"}`}>
-                    {formatCurrency(totalIncome - totalExpenses)}
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ahorro</p>
+                  <p className="text-2xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(totalSavings)}</p>
+                </div>
+                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Disponible</p>
+                  <p className="text-2xl font-bold" style={{ color: totalBalance >= 0 ? "var(--primary)" : "var(--expense)" }}>
+                    {formatCurrency(totalBalance)}
                   </p>
                 </div>
               </div>
@@ -255,6 +263,7 @@ export default function ReportsPage() {
                       <Tooltip content={<CustomTooltip />} />
                       <Line type="monotone" dataKey="income" name="Ingresos" stroke="#22c55e" strokeWidth={2} />
                       <Line type="monotone" dataKey="expense" name="Gastos" stroke="#ef4444" strokeWidth={2} />
+                      <Line type="monotone" dataKey="saving" name="Ahorro" stroke="#f59e0b" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -271,6 +280,7 @@ export default function ReportsPage() {
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="income" name="Ingresos" fill="#22c55e" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="expense" name="Gastos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="saving" name="Ahorro" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -299,16 +309,15 @@ export default function ReportsPage() {
                           </td>
                           <td className="py-2 px-2">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              t.type === "income" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                              t.type === "income" ? "bg-green-100 text-green-700" : t.type === "saving" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
                             }`}>
-                              {t.type === "income" ? "Ingreso" : "Gasto"}
+                              {t.type === "income" ? "Ingreso" : t.type === "saving" ? "Ahorro" : "Gasto"}
                             </span>
                           </td>
                           <td className="py-2 px-2">{t.category.icon} {t.category.name}</td>
                           <td className="py-2 px-2" style={{ color: "var(--text)" }}>{t.description}</td>
-                          <td className={`py-2 px-2 text-right font-medium ${
-                            t.type === "income" ? "text-green-600" : "text-red-600"
-                          }`}>
+                          <td className="py-2 px-2 text-right font-medium"
+                            style={{ color: t.type === "income" ? "#22c55e" : t.type === "saving" ? "#f59e0b" : "#ef4444" }}>
                             {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
                           </td>
                         </tr>
