@@ -11,7 +11,10 @@ export function formatCurrency(amount: number): string {
 
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date
-  return format(d, "d MMM yyyy", { locale: es })
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${day}/${m}/${y}`
 }
 
 export function getMonthRange(date: Date = new Date()) {

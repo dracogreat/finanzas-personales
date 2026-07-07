@@ -33,7 +33,7 @@ export async function PUT(
         ...(quantity !== undefined && { quantity: quantity ? parseFloat(quantity) : null }),
         ...(notes !== undefined && { notes: notes || null }),
         ...(description && { description }),
-        ...(date && { date: new Date(date) }),
+        ...(date && { date: new Date(date + "T12:00:00") }),
         ...(type && { type }),
         ...(categoryId && { categoryId }),
       },

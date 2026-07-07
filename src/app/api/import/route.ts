@@ -48,7 +48,7 @@ export async function POST(request: Request) {
             quantity: row.cantidad || row.quantity || row.unidades ? parseFloat(row.cantidad || row.quantity || row.unidades) : null,
             notes: row.observacion || row.observaciones || row.notes || null,
             description,
-            date: new Date(date),
+            date: new Date(date + "T12:00:00"),
             type,
             categoryId: category.id,
             userId: session.user.id,

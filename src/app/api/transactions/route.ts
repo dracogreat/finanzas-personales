@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         ...(quantity && { quantity: parseFloat(quantity) }),
         ...(notes && { notes }),
         description,
-        date: new Date(date),
+        date: new Date(date + "T12:00:00"),
         type,
         categoryId,
         userId: session.user.id,
