@@ -11,7 +11,7 @@ export function Skeleton({ className = "", style }: { className?: string; style?
 
 export function CardSkeleton() {
   return (
-    <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+    <div className="rounded-2xl p-5 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
       <Skeleton className="h-3 w-20 mb-3" />
       <Skeleton className="h-8 w-28" />
     </div>
@@ -20,7 +20,7 @@ export function CardSkeleton() {
 
 export function ChartSkeleton() {
   return (
-    <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+    <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
       <Skeleton className="h-4 w-40 mb-4" />
       <Skeleton className="h-[300px] w-full" />
     </div>

@@ -36,6 +36,10 @@ body {
   color: var(--text);
 }
 
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
 @media (max-width: 768px) {
   .sidebar-hidden {
     transform: translateX(-100%);

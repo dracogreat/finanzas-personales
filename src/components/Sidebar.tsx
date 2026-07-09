@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -22,6 +22,7 @@ export default function Sidebar({
   onClose: () => void
 }) {
   const pathname = usePathname()
+  const { data: session } = useSession()
   const [dark, setDark] = useState(false)
 
   useEffect(() => {
@@ -37,6 +38,13 @@ export default function Sidebar({
     document.documentElement.classList.toggle("dark", next)
   }
 
+  const userInitials = (session?.user?.name || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+
   return (
     <>
       {isOpen && (
@@ -47,19 +55,30 @@ export default function Sidebar({
       )}
       <aside
         className={`
-          fixed md:static inset-y-0 left-0 z-50 w-64
+          fixed md:static inset-y-0 left-0 z-50 w-64 flex flex-col
           transform transition-transform duration-200 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:min-h-screen
         `}
-        style={{ backgroundColor: "var(--bg-sidebar)", borderRight: "1px solid var(--border)" }}
+        style={{
+          backgroundColor: "var(--bg-sidebar)",
+          borderRight: "1px solid var(--border)",
+        }}
       >
-        <div className="p-4 border-b" style={{ borderColor: "var(--border)" }}>
-          <h1 className="font-bold text-lg" style={{ color: "var(--primary)" }}>💰 Finanzas</h1>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Control personal</p>
+        <div className="p-5 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
+              style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}>
+              {userInitials}
+            </div>
+            <div>
+              <h1 className="font-bold text-lg leading-tight" style={{ color: "var(--text)" }}>Finanzas</h1>
+              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{session?.user?.name || "Mi cuenta"}</p>
+            </div>
+          </div>
         </div>
 
-        <nav className="p-4 space-y-1">
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {menuItems.map((item) => {
             const isActive = pathname.startsWith(item.href)
             return (
@@ -67,38 +86,39 @@ export default function Sidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors`}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative"
                 style={{
-                  backgroundColor: isActive ? "var(--primary)" : "transparent",
-                  color: isActive ? "#fff" : "var(--text-secondary)",
+                  backgroundColor: isActive ? "rgba(99,102,241,0.12)" : "transparent",
+                  color: isActive ? "var(--primary)" : "var(--text-secondary)",
                 }}
-                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = "rgba(128,128,128,0.1)" } }}
-                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = "transparent" } }}
               >
-                <span>{item.icon}</span>
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full"
+                    style={{ backgroundColor: "var(--primary)" }} />
+                )}
+                <span className="text-lg">{item.icon}</span>
                 {item.label}
               </Link>
             )
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="p-3 space-y-0.5" style={{ borderTop: "1px solid var(--border)" }}>
           <button
             onClick={toggleDark}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full transition-colors mb-1"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium w-full transition-all"
             style={{ color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(128,128,128,0.1)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent" }}
           >
-            {dark ? "☀️ Modo claro" : "🌙 Modo oscuro"}
+            <span className="text-lg">{dark ? "☀️" : "🌙"}</span>
+            {dark ? "Modo claro" : "Modo oscuro"}
           </button>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 w-full transition-colors"
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent" }}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium w-full transition-all"
+            style={{ color: "var(--expense)" }}
           >
-            🚪 Cerrar sesión
+            <span className="text-lg">🚪</span>
+            Cerrar sesión
           </button>
         </div>
       </aside>

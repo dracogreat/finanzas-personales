@@ -181,29 +181,52 @@ export default function DashboardPage() {
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ingresos</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+                <div className="rounded-2xl p-5 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ingresos</p>
+                      <p className="text-xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Gastos</p>
-                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
+                <div className="rounded-2xl p-5 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(239,68,68,0.12)" }}>💸</div>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Gastos</p>
+                      <p className="text-xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ahorro</p>
-                  <p className="text-2xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(totalSavings)}</p>
+                <div className="rounded-2xl p-5 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorro</p>
+                      <p className="text-xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(totalSavings)}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Disponible</p>
-                  <p className="text-2xl font-bold" style={{ color: balance >= 0 ? "var(--primary)" : "var(--expense)" }}>
-                    {formatCurrency(balance)}
-                  </p>
+                <div className="rounded-2xl p-5 border-2" style={{ borderColor: balance >= 0 ? "var(--primary)" : "var(--expense)", backgroundColor: "var(--bg-card)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: balance >= 0 ? "rgba(99,102,241,0.12)" : "rgba(239,68,68,0.12)" }}>✨</div>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Disponible</p>
+                      <p className="text-xl font-bold" style={{ color: balance >= 0 ? "var(--primary)" : "var(--expense)" }}>
+                        {formatCurrency(balance)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {activeBudgets.length > 0 && (
-                <div className="rounded-xl p-5 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <h2 className="font-semibold mb-3" style={{ color: "var(--text)" }}>Presupuestos del mes</h2>
+                <div className="rounded-2xl p-5 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🎯</span>
+                    <h2 className="font-semibold" style={{ color: "var(--text)" }}>Presupuestos del mes</h2>
+                  </div>
                   <div className="space-y-3">
                     {activeBudgets.map((b) => {
                       const pct = b.amount > 0 ? Math.min((b.spent / b.amount) * 100, 100) : 0
@@ -231,8 +254,11 @@ export default function DashboardPage() {
               )}
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Gastos por categoría</h2>
+                <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-lg">🥧</span>
+                    <h2 className="font-semibold" style={{ color: "var(--text)" }}>Gastos por categoría</h2>
+                  </div>
                   {pieData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
@@ -257,8 +283,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Ingresos vs Gastos</h2>
+                <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-lg">📊</span>
+                    <h2 className="font-semibold" style={{ color: "var(--text)" }}>Ingresos vs Gastos</h2>
+                  </div>
                   {barData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={barData}>
@@ -278,8 +307,11 @@ export default function DashboardPage() {
               </div>
 
               {areaData.length > 1 && (
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Evolución del balance</h2>
+                <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-lg">📈</span>
+                    <h2 className="font-semibold" style={{ color: "var(--text)" }}>Evolución del balance</h2>
+                  </div>
                   <ResponsiveContainer width="100%" height={250}>
                     <AreaChart data={areaData}>
                       <defs>
@@ -298,8 +330,11 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Últimas transacciones</h2>
+              <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">🕐</span>
+                  <h2 className="font-semibold" style={{ color: "var(--text)" }}>Últimas transacciones</h2>
+                </div>
                 {recentTransactions.length > 0 ? (
                   <div className="space-y-3">
                     {recentTransactions.map((t) => (
