@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { formatCurrency } from "@/lib/utils"
+import { Skeleton, CardSkeleton, ChartSkeleton, ListSkeleton } from "@/components/Skeleton"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line,
@@ -144,8 +145,19 @@ export default function ReportsPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600" />
+      <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
+        <div className="flex-1 p-4 md:p-6 space-y-6">
+          <div><Skeleton className="h-8 w-32 mb-2" /><Skeleton className="h-4 w-48" /></div>
+          <div className="flex gap-3"><Skeleton className="h-10 w-full max-w-[200px]" /><Skeleton className="h-10 w-full max-w-[100px]" /><Skeleton className="h-10 w-36" /></div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartSkeleton /><ChartSkeleton />
+          </div>
+          <ChartSkeleton />
+          <ListSkeleton />
+        </div>
       </div>
     )
   }
@@ -198,9 +210,16 @@ export default function ReportsPage() {
             </div>
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600" />
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ChartSkeleton /><ChartSkeleton />
+              </div>
+              <ChartSkeleton />
+              <ListSkeleton />
+            </>
           ) : transactions.length > 0 ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

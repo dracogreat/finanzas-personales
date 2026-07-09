@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { Skeleton, ListSkeleton } from "@/components/Skeleton"
 import toast from "react-hot-toast"
 
 type Category = {
@@ -256,8 +257,15 @@ export default function TransactionsPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--bg)" }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderColor: "var(--primary)" }} />
+      <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
+        <div className="flex-1 p-4 md:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div><Skeleton className="h-8 w-48 mb-2" /><Skeleton className="h-4 w-32" /></div>
+            <Skeleton className="h-10 w-40 rounded-lg" />
+          </div>
+          <div className="flex gap-2"><Skeleton className="h-8 w-20 rounded-lg" /><Skeleton className="h-8 w-24 rounded-lg" /><Skeleton className="h-8 w-20 rounded-lg" /><Skeleton className="h-8 w-28 rounded-lg" /></div>
+          <ListSkeleton />
+        </div>
       </div>
     )
   }
@@ -454,9 +462,7 @@ export default function TransactionsPage() {
           )}
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: "var(--primary)" }} />
-            </div>
+            <ListSkeleton />
           ) : filteredTransactions.length > 0 ? (
             <div className="rounded-xl shadow-sm border divide-y" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
               {filteredTransactions.map((t) => {

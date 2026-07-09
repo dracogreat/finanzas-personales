@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { formatCurrency } from "@/lib/utils"
+import { Skeleton, CardSkeleton } from "@/components/Skeleton"
 import toast from "react-hot-toast"
 
 type Category = {
@@ -127,8 +128,17 @@ export default function BudgetsPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600" />
+      <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
+        <div className="flex-1 p-4 md:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div><Skeleton className="h-8 w-44 mb-2" /><Skeleton className="h-4 w-56" /></div>
+            <Skeleton className="h-10 w-44 rounded-lg" />
+          </div>
+          <Skeleton className="h-10 w-full max-w-xs mx-auto" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
+          </div>
+        </div>
       </div>
     )
   }
@@ -188,8 +198,8 @@ export default function BudgetsPage() {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : budgets.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { formatCurrency } from "@/lib/utils"
+import { Skeleton, CardSkeleton, ListSkeleton } from "@/components/Skeleton"
 import toast from "react-hot-toast"
 
 type Goal = {
@@ -92,8 +93,17 @@ export default function GoalsPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600" />
+      <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
+        <div className="flex-1 p-4 md:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div><Skeleton className="h-8 w-40 mb-2" /><Skeleton className="h-4 w-56" /></div>
+            <Skeleton className="h-10 w-32 rounded-lg" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
+          </div>
+          <ListSkeleton rows={2} />
+        </div>
       </div>
     )
   }
@@ -150,9 +160,7 @@ export default function GoalsPage() {
           )}
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600" />
-            </div>
+            <ListSkeleton rows={2} />
           ) : goals.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {goals.map((goal) => {
