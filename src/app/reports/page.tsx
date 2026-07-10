@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, formatDate } from "@/lib/utils"
 import { Skeleton, CardSkeleton, ChartSkeleton, ListSkeleton } from "@/components/Skeleton"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,6 +13,14 @@ import {
 import toast from "react-hot-toast"
 
 const COLORS = ["#6366f1", "#22c55e", "#ef4444", "#f59e0b", "#06b6d4", "#ec4899", "#8b5cf6", "#14b8a6"]
+
+const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string; sign: string }> = {
+  entrada: { label: "Entrada", icon: "💰", color: "#22c55e", bg: "rgba(34,197,94,0.12)", sign: "+" },
+  salida: { label: "Salida", icon: "💸", color: "#ef4444", bg: "rgba(239,68,68,0.12)", sign: "-" },
+  saving: { label: "Ahorro", icon: "🐷", color: "#f59e0b", bg: "rgba(245,158,11,0.12)", sign: "-" },
+  deuda: { label: "Deuda", icon: "🏦", color: "#3b82f6", bg: "rgba(59,130,246,0.12)", sign: "+" },
+  pago_deuda: { label: "Pago deuda", icon: "🤝", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)", sign: "-" },
+}
 
 type Transaction = {
   id: string
@@ -31,98 +39,81 @@ export default function ReportsPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState<string>("")
 
-  useEffect(() => {
-    if (status === "unauthenticated") redirect("/login")
-  }, [status])
-
-  useEffect(() => {
-    fetchTransactions()
-  }, [selectedYear, selectedMonth])
+  useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
+  useEffect(() => { fetchTransactions() }, [selectedYear, selectedMonth])
 
   async function fetchTransactions() {
     setLoading(true)
     try {
       let url = "/api/transactions"
       const params = new URLSearchParams()
-      if (selectedMonth) {
-        params.set("month", selectedMonth)
-        params.set("year", String(selectedYear))
-      }
+      if (selectedMonth) { params.set("month", selectedMonth); params.set("year", String(selectedYear)) }
       if (params.toString()) url += `?${params.toString()}`
-
       const res = await fetch(url)
       const data = await res.json()
       setTransactions(data)
-    } catch {
-      toast.error("Error al cargar datos")
-    } finally {
-      setLoading(false)
-    }
+    } catch { toast.error("Error al cargar datos") } finally { setLoading(false) }
   }
 
   async function handleExport() {
     try {
       let url = "/api/export"
       const params = new URLSearchParams()
-      if (selectedMonth) {
-        params.set("month", selectedMonth)
-        params.set("year", String(selectedYear))
-      }
+      if (selectedMonth) { params.set("month", selectedMonth); params.set("year", String(selectedYear)) }
       if (params.toString()) url += `?${params.toString()}`
-
       const res = await fetch(url)
       const blob = await res.blob()
       const urlBlob = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = urlBlob
-      a.download = selectedMonth
-        ? `transacciones-${selectedYear}-${selectedMonth.padStart(2, "0")}.csv`
-        : "transacciones.csv"
+      a.download = selectedMonth ? `transacciones-${selectedYear}-${selectedMonth.padStart(2, "0")}.csv` : "transacciones.csv"
       a.click()
       window.URL.revokeObjectURL(urlBlob)
       toast.success("Archivo descargado")
-    } catch {
-      toast.error("Error al exportar")
-    }
+    } catch { toast.error("Error al exportar") }
   }
 
-  const totalIncome = transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0)
-  const totalExpenses = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0)
-  const totalSavings = transactions.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
-  const totalBalance = totalIncome - totalExpenses - totalSavings
+  const totalEntradas = transactions.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
+  const totalSalidas = transactions.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
+  const totalAhorros = transactions.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+  const totalDeudas = transactions.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
+  const totalPagosDeuda = transactions.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
+  const disponible = totalEntradas - totalSalidas - totalAhorros + totalDeudas - totalPagosDeuda
 
   const byCategory = transactions
-    .filter((t) => t.type === "expense")
+    .filter((t) => t.type === "salida")
     .reduce<Record<string, { name: string; value: number; color: string }>>((acc, t) => {
       const key = t.category.name
       if (!acc[key]) acc[key] = { name: key, value: 0, color: t.category.color }
       acc[key].value += t.amount
       return acc
     }, {})
-
   const pieData = Object.values(byCategory).sort((a, b) => b.value - a.value)
 
-  const byDay = transactions.reduce<Record<string, { date: string; income: number; expense: number; saving: number }>>((acc, t) => {
-    const d = new Date(t.date).toISOString().split("T")[0]
-    if (!acc[d]) acc[d] = { date: d, income: 0, expense: 0, saving: 0 }
-    if (t.type === "income") acc[d].income += t.amount
-    else if (t.type === "saving") acc[d].saving += t.amount
-    else acc[d].expense += t.amount
+  const byDay = transactions.reduce<Record<string, { date: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
+    const d = new Date(t.date)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    if (!acc[key]) acc[key] = { date: key, income: 0, expense: 0, saving: 0, deuda: 0, pagoDeuda: 0 }
+    if (t.type === "entrada") acc[key].income += t.amount
+    else if (t.type === "salida") acc[key].expense += t.amount
+    else if (t.type === "saving") acc[key].saving += t.amount
+    else if (t.type === "deuda") acc[key].deuda += t.amount
+    else if (t.type === "pago_deuda") acc[key].pagoDeuda += t.amount
     return acc
   }, {})
-
   const lineData = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
 
-  const byMonth = transactions.reduce<Record<string, { month: string; income: number; expense: number; saving: number }>>((acc, t) => {
+  const byMonth = transactions.reduce<Record<string, { month: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
     const d = new Date(t.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-    if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0 }
-    if (t.type === "income") acc[key].income += t.amount
+    if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0, deuda: 0, pagoDeuda: 0 }
+    if (t.type === "entrada") acc[key].income += t.amount
+    else if (t.type === "salida") acc[key].expense += t.amount
     else if (t.type === "saving") acc[key].saving += t.amount
-    else acc[key].expense += t.amount
+    else if (t.type === "deuda") acc[key].deuda += t.amount
+    else if (t.type === "pago_deuda") acc[key].pagoDeuda += t.amount
     return acc
   }, {})
-
   const monthlyBarData = Object.values(byMonth).sort((a, b) => a.month.localeCompare(b.month))
 
   const months = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre"]
@@ -132,11 +123,7 @@ export default function ReportsPage() {
       return (
         <div className="shadow-lg rounded-lg p-3 border text-sm" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text)" }}>
           <p className="font-medium mb-1">{label}</p>
-          {payload.map((p: any) => (
-            <p key={p.name} style={{ color: p.color }}>
-              {p.name}: {formatCurrency(p.value)}
-            </p>
-          ))}
+          {payload.map((p: any) => (<p key={p.name} style={{ color: p.color }}>{p.name}: {formatCurrency(p.value)}</p>))}
         </div>
       )
     }
@@ -149,14 +136,9 @@ export default function ReportsPage() {
         <div className="flex-1 p-4 md:p-6 space-y-6">
           <div><Skeleton className="h-8 w-32 mb-2" /><Skeleton className="h-4 w-48" /></div>
           <div className="flex gap-3"><Skeleton className="h-10 w-full max-w-[200px]" /><Skeleton className="h-10 w-full max-w-[100px]" /><Skeleton className="h-10 w-36" /></div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartSkeleton /><ChartSkeleton />
-          </div>
-          <ChartSkeleton />
-          <ListSkeleton />
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">{Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><ChartSkeleton /><ChartSkeleton /></div>
+          <ChartSkeleton /><ListSkeleton />
         </div>
       </div>
     )
@@ -165,13 +147,10 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
       <div className="flex-1 flex flex-col">
         <header className="px-4 py-3 flex items-center gap-3 md:hidden" style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ color: "var(--text-secondary)" }}>
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <h1 className="font-semibold" style={{ color: "var(--text)" }}>Reportes</h1>
         </header>
@@ -181,83 +160,68 @@ export default function ReportsPage() {
             <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Reportes</h1>
             <p style={{ color: "var(--text-secondary)" }}>Analiza tus finanzas</p>
           </div>
-          <div className="flex items-center gap-3">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-              >
-                <option value="">Todo el año</option>
-                {months.slice(1).map((name, i) => (
-                  <option key={i + 1} value={String(i + 1)}>{name}</option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-              >
-                {[2024, 2025, 2026, 2027].map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleExport}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-2"
-              >
-                📥 Exportar CSV
-              </button>
-            </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }}>
+              <option value="">Todo el año</option>
+              {months.slice(1).map((name, i) => (<option key={i + 1} value={String(i + 1)}>{name}</option>))}
+            </select>
+            <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }}>
+              {[2024, 2025, 2026, 2027].map((y) => (<option key={y} value={y}>{y}</option>))}
+            </select>
+            <button onClick={handleExport} className="px-4 py-2 rounded-xl text-sm font-medium text-white flex items-center gap-2 transition-colors" style={{ backgroundColor: "#22c55e" }}>
+              📥 Exportar CSV
+            </button>
+          </div>
 
           {loading ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <ChartSkeleton /><ChartSkeleton />
-              </div>
-              <ChartSkeleton />
-              <ListSkeleton />
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">{Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}</div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><ChartSkeleton /><ChartSkeleton /></div>
+              <ChartSkeleton /><ListSkeleton />
             </>
           ) : transactions.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ingresos</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Entradas</p>
+                  <p className="text-xl font-bold" style={{ color: "#22c55e" }}>{formatCurrency(totalEntradas)}</p>
                 </div>
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Gastos</p>
-                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
+                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(239,68,68,0.12)" }}>💸</div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Salidas</p>
+                  <p className="text-xl font-bold" style={{ color: "#ef4444" }}>{formatCurrency(totalSalidas)}</p>
                 </div>
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ahorro</p>
-                  <p className="text-2xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(totalSavings)}</p>
+                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorros</p>
+                  <p className="text-xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(totalAhorros)}</p>
                 </div>
-                <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Disponible</p>
-                  <p className="text-2xl font-bold" style={{ color: totalBalance >= 0 ? "var(--primary)" : "var(--expense)" }}>
-                    {formatCurrency(totalBalance)}
-                  </p>
+                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(139,92,246,0.12)" }}>🤝</div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>P. Deuda</p>
+                  <p className="text-xl font-bold" style={{ color: "#8b5cf6" }}>{formatCurrency(totalPagosDeuda)}</p>
+                </div>
+                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: disponible >= 0 ? "rgba(99,102,241,0.12)" : "rgba(239,68,68,0.12)" }}>✨</div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Disponible</p>
+                  <p className="text-xl font-bold" style={{ color: disponible >= 0 ? "#6366f1" : "#ef4444" }}>{formatCurrency(disponible)}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Gastos por categoría</h2>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-lg">🥧</span>
+                    <h2 className="font-semibold" style={{ color: "var(--text)" }}>Salidas por categoría</h2>
+                  </div>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%" cy="50%"
-                        innerRadius={60} outerRadius={100}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {pieData.map((entry, i) => (
-                          <Cell key={entry.name} fill={entry.color || COLORS[i % COLORS.length]} />
-                        ))}
+                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
+                        {pieData.map((entry, i) => (<Cell key={entry.name} fill={entry.color || COLORS[i % COLORS.length]} />))}
                       </Pie>
                       <Tooltip content={<CustomTooltip />} />
                     </PieChart>
@@ -273,16 +237,21 @@ export default function ReportsPage() {
                 </div>
 
                 <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Evolución diaria</h2>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-lg">📈</span>
+                    <h2 className="font-semibold" style={{ color: "var(--text)" }}>Evolución diaria</h2>
+                  </div>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={lineData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Line type="monotone" dataKey="income" name="Ingresos" stroke="#22c55e" strokeWidth={2} />
-                      <Line type="monotone" dataKey="expense" name="Gastos" stroke="#ef4444" strokeWidth={2} />
+                      <Line type="monotone" dataKey="income" name="Entradas" stroke="#22c55e" strokeWidth={2} />
+                      <Line type="monotone" dataKey="expense" name="Salidas" stroke="#ef4444" strokeWidth={2} />
                       <Line type="monotone" dataKey="saving" name="Ahorro" stroke="#f59e0b" strokeWidth={2} />
+                      <Line type="monotone" dataKey="deuda" name="Deudas" stroke="#3b82f6" strokeWidth={2} />
+                      <Line type="monotone" dataKey="pagoDeuda" name="Pagos" stroke="#8b5cf6" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -290,23 +259,31 @@ export default function ReportsPage() {
 
               {!selectedMonth && (
                 <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Ingresos vs Gastos mensuales</h2>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-lg">📊</span>
+                    <h2 className="font-semibold" style={{ color: "var(--text)" }}>Movimientos mensuales</h2>
+                  </div>
                   <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={monthlyBarData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="income" name="Ingresos" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="expense" name="Gastos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="income" name="Entradas" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="expense" name="Salidas" fill="#ef4444" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="saving" name="Ahorro" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="deuda" name="Deudas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="pagoDeuda" name="Pagos" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               )}
 
               <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                <h2 className="font-semibold mb-4" style={{ color: "var(--text)" }}>Resumen de transacciones</h2>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">📋</span>
+                  <h2 className="font-semibold" style={{ color: "var(--text)" }}>Detalle de transacciones</h2>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -319,28 +296,24 @@ export default function ReportsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {transactions.slice(0, 20).map((t) => (
-                        <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}>
-                          <td className="py-2 px-2" style={{ color: "var(--text-secondary)" }}>
-                            {new Date(t.date).toLocaleDateString("es-PE")}
-                          </td>
-                          <td className="py-2 px-2">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              t.type === "income" ? "bg-green-100 text-green-700" : t.type === "saving" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
-                            }`}>
-                              {t.type === "income" ? "Ingreso" : t.type === "saving" ? "Ahorro" : "Gasto"}
-                            </span>
-                          </td>
-                          <td className="py-2 px-2">{t.category.icon} {t.category.name}</td>
-                          <td className="py-2 px-2" style={{ color: "var(--text)" }}>{t.description}</td>
-                          <td className="py-2 px-2 text-right font-medium"
-                            style={{ color: t.type === "income" ? "#22c55e" : t.type === "saving" ? "#f59e0b" : "#ef4444" }}>
-                            {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
-                          </td>
-                        </tr>
-                      ))}
+                      {transactions.slice(0, 20).map((t) => {
+                        const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.salida
+                        return (
+                          <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}>
+                            <td className="py-2 px-2" style={{ color: "var(--text-secondary)" }}>{formatDate(t.date)}</td>
+                            <td className="py-2 px-2">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                            </td>
+                            <td className="py-2 px-2">{t.category.icon} {t.category.name}</td>
+                            <td className="py-2 px-2" style={{ color: "var(--text)" }}>{t.description}</td>
+                            <td className="py-2 px-2 text-right font-medium" style={{ color: cfg.color }}>
+                              {cfg.sign}{formatCurrency(t.amount)}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
