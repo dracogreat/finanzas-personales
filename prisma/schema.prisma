@@ -17,6 +17,7 @@ model User {
   categories   Category[]
   budgets      Budget[]
   goals        Goal[]
+  balance      Balance?
 }
 
 model Category {
@@ -71,4 +72,11 @@ model Budget {
   createdAt  DateTime @default(now())
 
   @@unique([userId, categoryId, month, year])
+}
+
+model Balance {
+  id             String @id @default(cuid())
+  initialBalance Float  @default(0)
+  userId         String @unique
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
