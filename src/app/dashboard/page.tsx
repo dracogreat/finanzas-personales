@@ -6,7 +6,6 @@ import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { CardSkeleton, ChartSkeleton, ListSkeleton } from "@/components/Skeleton"
-import toast from "react-hot-toast"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area,
@@ -54,8 +53,6 @@ export default function DashboardPage() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [balance, setBalance] = useState<Balance | null>(null)
   const [loading, setLoading] = useState(true)
-  const [editingBalance, setEditingBalance] = useState(false)
-  const [balanceInput, setBalanceInput] = useState("")
 
   useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
   useEffect(() => { Promise.all([fetchTransactions(), fetchBudgets(), fetchBalance()]) }, [])
@@ -71,18 +68,6 @@ export default function DashboardPage() {
   async function fetchBalance() {
     try { const res = await fetch("/api/balance"); const data = await res.json(); setBalance(data) }
     catch { console.error("Error fetching balance") } finally { setLoading(false) }
-  }
-
-  async function saveBalance() {
-    const val = parseFloat(balanceInput)
-    if (isNaN(val)) { toast.error("Monto inválido"); return }
-    try {
-      const res = await fetch("/api/balance", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initialBalance: val }) })
-      if (!res.ok) throw new Error()
-      setBalance({ ...balance!, initialBalance: val })
-      setEditingBalance(false)
-      toast.success("Saldo inicial actualizado")
-    } catch { toast.error("Error al guardar saldo") }
   }
 
   const initialBalance = balance?.initialBalance || 0
@@ -177,31 +162,6 @@ export default function DashboardPage() {
             </>
           ) : (
             <>
-              <div className="rounded-2xl p-5 border-2" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", borderStyle: "dashed" }}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(99,102,241,0.12)" }}>🏦</div>
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>Saldo Inicial</p>
-                      {editingBalance ? (
-                        <div className="flex items-center gap-2 mt-1">
-                          <input type="number" step="0.01" value={balanceInput} onChange={(e) => setBalanceInput(e.target.value)}
-                            className="w-32 px-3 py-1 rounded-lg text-lg font-bold outline-none" style={{ border: "1px solid var(--primary)", backgroundColor: "var(--bg)", color: "var(--text)" }} autoFocus />
-                          <button onClick={saveBalance} className="text-sm font-medium px-3 py-1 rounded-lg text-white" style={{ backgroundColor: "var(--primary)" }}>✓</button>
-                          <button onClick={() => setEditingBalance(false)} className="text-sm px-3 py-1 rounded-lg" style={{ color: "var(--text-secondary)" }}>✕</button>
-                        </div>
-                      ) : (
-                        <p className="text-xl font-bold" style={{ color: "var(--text)" }}>
-                          {formatCurrency(initialBalance)}
-                          <button onClick={() => { setBalanceInput(String(initialBalance)); setEditingBalance(true) }}
-                            className="ml-2 text-xs px-2 py-0.5 rounded-md transition-colors" style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-hover)" }}>✏️</button>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-2" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
