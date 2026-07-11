@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
@@ -64,15 +64,21 @@ export default function DashboardPage() {
 
   async function fetchTransactions() {
     try { const res = await fetch("/api/transactions"); const data = await res.json(); setTransactions(data) }
-    catch { console.error("Error fetching transactions") }
+    catch { console.error("Error fetching transactions") } finally { checkReady() }
   }
   async function fetchBudgets() {
     try { const res = await fetch("/api/budgets"); const data = await res.json(); setBudgets(data) }
-    catch { console.error("Error fetching budgets") }
+    catch { console.error("Error fetching budgets") } finally { checkReady() }
   }
   async function fetchBalance() {
     try { const res = await fetch("/api/balance"); const data = await res.json(); setBalance(data) }
-    catch { console.error("Error fetching balance") } finally { setLoading(false) }
+    catch { console.error("Error fetching balance") } finally { checkReady() }
+  }
+
+  const loadedRef = useRef(0)
+  function checkReady() {
+    loadedRef.current++
+    if (loadedRef.current >= 3) setLoading(false)
   }
 
   async function saveSavings() {
