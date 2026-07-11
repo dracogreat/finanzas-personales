@@ -15,6 +15,11 @@ export async function GET(request: Request) {
   const date = searchParams.get("date")
   const type = searchParams.get("type")
   const categoryId = searchParams.get("categoryId")
+  const search = searchParams.get("search")
+  const minAmount = searchParams.get("minAmount")
+  const maxAmount = searchParams.get("maxAmount")
+  const from = searchParams.get("from")
+  const to = searchParams.get("to")
 
   const where: Record<string, unknown> = { userId: session.user.id }
 
@@ -23,6 +28,11 @@ export async function GET(request: Request) {
     const start = new Date(d.getFullYear(), d.getMonth(), d.getDate())
     const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
     where.date = { gte: start, lt: end }
+  } else if (from || to) {
+    const dateFilter: Record<string, Date> = {}
+    if (from) dateFilter.gte = new Date(from + "T12:00:00")
+    if (to) dateFilter.lt = new Date(new Date(to + "T12:00:00").getTime() + 86400000)
+    where.date = dateFilter
   } else if (month && year) {
     const m = parseInt(month)
     const y = parseInt(year)
@@ -34,6 +44,18 @@ export async function GET(request: Request) {
 
   if (type) where.type = type
   if (categoryId) where.categoryId = categoryId
+  if (search) {
+    where.OR = [
+      { description: { contains: search, mode: "insensitive" } },
+      { notes: { contains: search, mode: "insensitive" } },
+    ]
+  }
+  if (minAmount || maxAmount) {
+    const amountFilter: Record<string, number> = {}
+    if (minAmount) amountFilter.gte = parseFloat(minAmount)
+    if (maxAmount) amountFilter.lte = parseFloat(maxAmount)
+    where.amount = amountFilter
+  }
 
   const transactions = await prisma.transaction.findMany({
     where,
@@ -60,6 +82,16 @@ export async function POST(request: Request) {
       )
     }
 
+    let finalCategoryId = categoryId
+    if (!categoryId) {
+      const rules = await prisma.categoryRule.findMany({
+        where: { userId: session.user.id },
+      })
+      const descLower = description.toLowerCase()
+      const matchedRule = rules.find((r) => descLower.includes(r.pattern))
+      if (matchedRule) finalCategoryId = matchedRule.categoryId
+    }
+
     const transaction = await prisma.transaction.create({
       data: {
         amount: parseFloat(amount),
@@ -68,7 +100,7 @@ export async function POST(request: Request) {
         description,
         date: new Date(date + "T12:00:00"),
         type,
-        categoryId,
+        categoryId: finalCategoryId,
         userId: session.user.id,
       },
       include: { category: true },

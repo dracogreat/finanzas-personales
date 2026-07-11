@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { formatCurrency } from "@/lib/utils"
 import { Skeleton, CardSkeleton, ListSkeleton } from "@/components/Skeleton"
 import toast from "react-hot-toast"
+import confetti from "canvas-confetti"
 
 type Goal = {
   id: string
@@ -32,6 +33,17 @@ export default function GoalsPage() {
   }, [status])
 
   useEffect(() => { fetchGoals() }, [])
+
+  const celebratedRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    goals.forEach((g) => {
+      if (g.saved >= g.target && g.target > 0 && !celebratedRef.current.has(g.id)) {
+        celebratedRef.current.add(g.id)
+        confetti({ particleCount: 150, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#6366f1", "#f59e0b", "#ec4899"] })
+        toast.success(`¡Felicidades! Lograste la meta "${g.name}" 🎉`, { duration: 5000 })
+      }
+    })
+  }, [goals])
 
   async function fetchGoals() {
     try {
@@ -167,12 +179,17 @@ export default function GoalsPage() {
                 const progress = goal.target > 0 ? Math.min((goal.saved / goal.target) * 100, 100) : 0
                 const remaining = goal.target - goal.saved
                 return (
-                  <div key={goal.id} className="rounded-xl p-5 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div key={goal.id} className="rounded-xl p-5 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: goal.saved >= goal.target && goal.target > 0 ? "#22c55e" : "var(--border)" }}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{goal.icon}</span>
                         <div>
-                          <p className="font-medium">{goal.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{goal.name}</p>
+                            {goal.saved >= goal.target && goal.target > 0 && (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: "#22c55e" }}>¡Lograda! 🎉</span>
+                            )}
+                          </div>
                           <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                             {formatCurrency(goal.saved)} de {formatCurrency(goal.target)}
                             {goal.deadline && ` · ${new Date(goal.deadline).toLocaleDateString("es-PE")}`}
@@ -188,7 +205,7 @@ export default function GoalsPage() {
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm" style={{ color: "var(--text-secondary)" }}>
                         <span>{Math.round(progress)}% completado</span>
-                        <span>Falta {formatCurrency(remaining)}</span>
+                        {goal.saved < goal.target && <span>Falta {formatCurrency(remaining)}</span>}
                       </div>
                       <div className="w-full rounded-full h-2.5" style={{ backgroundColor: "var(--border)" }}>
                         <div className="h-2.5 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: goal.color }} />

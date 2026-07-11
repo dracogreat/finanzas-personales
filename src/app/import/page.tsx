@@ -11,6 +11,8 @@ export default function ImportPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ imported: number; errors: number; message: string } | null>(null)
+  const [preview, setPreview] = useState<Record<string, string>[]>([])
+  const [previewHeaders, setPreviewHeaders] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (status === "unauthenticated") redirect("/login")
@@ -21,6 +23,8 @@ export default function ImportPage() {
 
     setLoading(true)
     setResult(null)
+    setPreview([])
+    setPreviewHeaders([])
 
     try {
       const text = await file.text()
@@ -38,6 +42,9 @@ export default function ImportPage() {
         headers.forEach((h, i) => { row[h] = cols[i] || "" })
         return row
       }).filter((row) => Object.values(row).some((v) => v))
+
+      setPreviewHeaders(headers)
+      setPreview(rows.slice(0, 5))
 
       const res = await fetch("/api/import", {
         method: "POST",
@@ -59,6 +66,23 @@ export default function ImportPage() {
       setLoading(false)
       if (fileInputRef.current) fileInputRef.current.value = ""
     }
+  }
+
+  function downloadTemplate() {
+    const headers = "fecha,tipo,categoria,descripcion,total,cantidad,observacion"
+    const examples = [
+      "01/07/2026,salida,Comida,Almuerzo,25.00,1,",
+      "01/07/2026,entrada,Salario,Sueldo mensual,3000.00,1,",
+      "02/07/2026,salida,Transporte,Uber,15.50,1,Viaje al trabajo",
+      "05/07/2026,saving,Ahorro,Ahorro vacaciones,200.00,1,",
+    ]
+    const csv = [headers, ...examples].join("\n")
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url; a.download = "plantilla-importar.csv"; a.click()
+    window.URL.revokeObjectURL(url)
+    toast.success("Plantilla descargada")
   }
 
   const expectedHeaders = [
@@ -89,6 +113,13 @@ export default function ImportPage() {
           <div className="hidden md:block">
             <h1 className="text-2xl font-bold">Importar transacciones</h1>
             <p style={{ color: "var(--text-secondary)" }}>Sube un archivo CSV (desde Excel) para importar tus datos</p>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={downloadTemplate} className="px-4 py-2 rounded-xl text-sm font-medium border flex items-center gap-2"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }}>
+              📥 Descargar plantilla
+            </button>
           </div>
 
           <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
@@ -160,6 +191,28 @@ export default function ImportPage() {
                   ⚠️ {result.errors} transacciones con errores (categoría no encontrada o datos inválidos)
                 </p>
               )}
+            </div>
+          )}
+
+          {preview.length > 0 && (
+            <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <h2 className="font-semibold mb-3">Vista previa (primeras 5 filas)</h2>
+              <div className="overflow-x-auto">
+                <table className="text-sm w-full">
+                  <thead>
+                    <tr className="border-b" style={{ borderColor: "var(--border)" }}>
+                      {previewHeaders.map((h) => (<th key={h} className="text-left py-2 pr-4 capitalize">{h}</th>))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.map((row, i) => (
+                      <tr key={i} className="border-b" style={{ borderColor: "var(--border)" }}>
+                        {previewHeaders.map((h) => (<td key={h} className="py-1.5 pr-4" style={{ color: "var(--text-secondary)" }}>{row[h] || "-"}</td>))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </main>

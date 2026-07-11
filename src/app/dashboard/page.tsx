@@ -130,6 +130,12 @@ export default function DashboardPage() {
 
   const recentTransactions = transactions.slice(0, 5)
 
+  const dayOfMonth = today.getDate()
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+  const daysRemaining = daysInMonth - dayOfMonth
+  const gastoDiarioPromedio = dayOfMonth > 0 ? totalSalidas / dayOfMonth : 0
+  const proyeccion = disponible - (gastoDiarioPromedio * daysRemaining)
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -226,37 +232,83 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {activeBudgets.length > 0 && (
-                <div className="rounded-2xl p-5 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">🎯</span>
-                    <h2 className="font-semibold" style={{ color: "var(--text)" }}>Presupuestos del mes</h2>
-                  </div>
-                  <div className="space-y-3">
-                    {activeBudgets.map((b) => {
-                      const pct = b.amount > 0 ? Math.min((b.spent / b.amount) * 100, 100) : 0
-                      const isOver = b.spent > b.amount
-                      const isWarning = !isOver && pct > 80
-                      return (
-                        <div key={b.id}>
-                          <div className="flex items-center justify-between text-sm mb-1">
-                            <span style={{ color: "var(--text)" }}>{b.category.icon} {b.category.name}</span>
-                            <span style={{ color: isOver ? "#ef4444" : isWarning ? "#f59e0b" : "#22c55e" }}>
-                              {formatCurrency(b.spent)} / {formatCurrency(b.amount)}
-                            </span>
-                          </div>
-                          <div className="w-full rounded-full h-2" style={{ backgroundColor: "var(--bg-hover)" }}>
-                            <div className="h-2 rounded-full transition-all" style={{
-                              width: `${pct}%`,
-                              backgroundColor: isOver ? "#ef4444" : isWarning ? "#f59e0b" : "#22c55e",
-                            }} />
-                          </div>
-                        </div>
-                      )
-                    })}
+              {totalSalidas > 0 && (
+                <div className="rounded-2xl p-4 border" style={{ backgroundColor: proyeccion >= 0 ? "rgba(99,102,241,0.05)" : "rgba(239,68,68,0.05)", borderColor: proyeccion >= 0 ? "#6366f1" : "#ef4444" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: proyeccion >= 0 ? "rgba(99,102,241,0.12)" : "rgba(239,68,68,0.12)" }}>🔮</div>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Proyección fin de mes</p>
+                      <p className="text-lg font-bold" style={{ color: proyeccion >= 0 ? "#6366f1" : "#ef4444" }}>{formatCurrency(proyeccion)}</p>
+                    </div>
+                    <div className="text-right text-xs" style={{ color: "var(--text-secondary)" }}>
+                      <p>Gasto promedio/día: {formatCurrency(gastoDiarioPromedio)}</p>
+                      <p>Faltan {daysRemaining} días</p>
+                    </div>
                   </div>
                 </div>
               )}
+
+              {activeBudgets.length > 0 && (() => {
+                const alerts = activeBudgets.filter((b) => {
+                  const pct = b.amount > 0 ? (b.spent / b.amount) * 100 : 0
+                  return pct >= 80
+                })
+                return (
+                  <>
+                    {alerts.length > 0 && (
+                      <div className="rounded-2xl p-4 border-2" style={{ backgroundColor: "rgba(239,68,68,0.05)", borderColor: "#ef4444" }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">⚠️</span>
+                          <h2 className="font-semibold" style={{ color: "#ef4444" }}>Alertas de presupuesto</h2>
+                        </div>
+                        <div className="space-y-2">
+                          {alerts.map((b) => {
+                            const pct = b.amount > 0 ? Math.round((b.spent / b.amount) * 100) : 0
+                            const isOver = b.spent > b.amount
+                            return (
+                              <div key={b.id} className="flex items-center justify-between text-sm p-2 rounded-lg" style={{ backgroundColor: "var(--bg-card)" }}>
+                                <span style={{ color: "var(--text)" }}>{b.category.icon} {b.category.name}</span>
+                                <span className="font-medium" style={{ color: isOver ? "#ef4444" : "#f59e0b" }}>
+                                  {isOver ? `Excedido en ${formatCurrency(b.spent - b.amount)}` : `${pct}% usado — Te quedan ${formatCurrency(b.amount - b.spent)}`}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <div className="rounded-2xl p-5 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">🎯</span>
+                        <h2 className="font-semibold" style={{ color: "var(--text)" }}>Presupuestos del mes</h2>
+                      </div>
+                      <div className="space-y-3">
+                        {activeBudgets.map((b) => {
+                          const pct = b.amount > 0 ? Math.min((b.spent / b.amount) * 100, 100) : 0
+                          const isOver = b.spent > b.amount
+                          const isWarning = !isOver && pct > 80
+                          return (
+                            <div key={b.id}>
+                              <div className="flex items-center justify-between text-sm mb-1">
+                                <span style={{ color: "var(--text)" }}>{b.category.icon} {b.category.name}</span>
+                                <span style={{ color: isOver ? "#ef4444" : isWarning ? "#f59e0b" : "#22c55e" }}>
+                                  {formatCurrency(b.spent)} / {formatCurrency(b.amount)}
+                                </span>
+                              </div>
+                              <div className="w-full rounded-full h-2" style={{ backgroundColor: "var(--bg-hover)" }}>
+                                <div className="h-2 rounded-full transition-all" style={{
+                                  width: `${pct}%`,
+                                  backgroundColor: isOver ? "#ef4444" : isWarning ? "#f59e0b" : "#22c55e",
+                                }} />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>

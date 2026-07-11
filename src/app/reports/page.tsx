@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatCurrency, formatDate, convertCurrency, formatCurrencyISO, RATES } from "@/lib/utils"
 import { Skeleton, CardSkeleton, ChartSkeleton, ListSkeleton } from "@/components/Skeleton"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -47,9 +47,11 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>("")
   const [selectedDay, setSelectedDay] = useState<string>("")
   const [typeFilter, setTypeFilter] = useState("all")
+  const [prevMonthData, setPrevMonthData] = useState<Transaction[]>([])
+  const [showCurrency, setShowCurrency] = useState<string | null>(null)
 
   useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
-  useEffect(() => { Promise.all([fetchTransactions(), fetchBalance()]) }, [selectedYear, selectedMonth, selectedDay])
+  useEffect(() => { Promise.all([fetchTransactions(), fetchBalance(), fetchPrevMonth()]) }, [selectedYear, selectedMonth, selectedDay])
 
   async function fetchTransactions() {
     setLoading(true)
@@ -72,6 +74,17 @@ export default function ReportsPage() {
   async function fetchBalance() {
     try { const res = await fetch("/api/balance"); const data = await res.json(); setBalance(data) }
     catch { console.error("Error fetching balance") }
+  }
+
+  async function fetchPrevMonth() {
+    if (selectedDay || !selectedMonth) { setPrevMonthData([]); return }
+    try {
+      const prevMonth = parseInt(selectedMonth) === 1 ? 12 : parseInt(selectedMonth) - 1
+      const prevYear = parseInt(selectedMonth) === 1 ? selectedYear - 1 : selectedYear
+      const res = await fetch(`/api/transactions?month=${prevMonth}&year=${prevYear}`)
+      const data = await res.json()
+      setPrevMonthData(data)
+    } catch { setPrevMonthData([]) }
   }
 
   async function handleExport() {
@@ -99,6 +112,36 @@ export default function ReportsPage() {
       window.URL.revokeObjectURL(urlBlob)
       toast.success("Archivo descargado")
     } catch { toast.error("Error al exportar") }
+  }
+
+  async function handleBackup() {
+    try {
+      const [transRes, catRes, budRes, goalRes, balRes, recurRes, ruleRes] = await Promise.all([
+        fetch("/api/transactions"), fetch("/api/categories"),
+        fetch("/api/budgets"), fetch("/api/goals"),
+        fetch("/api/balance"), fetch("/api/recurring"),
+        fetch("/api/rules"),
+      ])
+      const backup = {
+        fecha: new Date().toISOString(),
+        version: "1.0",
+        transacciones: await transRes.json(),
+        categorias: await catRes.json(),
+        presupuestos: await budRes.json(),
+        metas: await goalRes.json(),
+        balance: await balRes.json(),
+        recurrentes: await recurRes.json(),
+        reglas: await ruleRes.json(),
+      }
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `backup-finanzas-${new Date().toISOString().split("T")[0]}.json`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      toast.success("Backup descargado")
+    } catch { toast.error("Error al crear backup") }
   }
 
   const filteredByType = typeFilter === "all" ? transactions : transactions.filter((t) => t.type === typeFilter)
@@ -209,6 +252,9 @@ export default function ReportsPage() {
             <button onClick={handleExport} className="px-4 py-2 rounded-xl text-sm font-medium text-white flex items-center gap-2 transition-colors" style={{ backgroundColor: "#22c55e" }}>
               📥 Exportar CSV
             </button>
+            <button onClick={handleBackup} className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors border" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }}>
+              💾 Backup JSON
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -224,6 +270,56 @@ export default function ReportsPage() {
             ))}
           </div>
 
+          {selectedMonth && prevMonthData.length > 0 && (() => {
+            const currEntradas = filteredByType.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
+            const currSalidas = filteredByType.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
+            const currAhorros = filteredByType.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+            const currPagos = filteredByType.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
+            const prevEntradas = prevMonthData.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
+            const prevSalidas = prevMonthData.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
+            const prevAhorros = prevMonthData.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+            const prevPagos = prevMonthData.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
+            const diff = (curr: number, prev: number) => {
+              if (prev === 0) return curr > 0 ? { val: 100, up: true } : { val: 0, up: true }
+              const pct = Math.round(((curr - prev) / prev) * 100)
+              return { val: Math.abs(pct), up: pct >= 0 }
+            }
+            const dE = diff(currEntradas, prevEntradas)
+            const dS = diff(currSalidas, prevSalidas)
+            const dA = diff(currAhorros, prevAhorros)
+            const dP = diff(currPagos, prevPagos)
+            return (
+              <div className="rounded-xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">📊</span>
+                  <h2 className="font-semibold" style={{ color: "var(--text)" }}>Comparativo con mes anterior</h2>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Entradas", curr: currEntradas, prev: prevEntradas, diff: dE, color: "#22c55e", icon: "💰" },
+                    { label: "Salidas", curr: currSalidas, prev: prevSalidas, diff: dS, color: "#ef4444", icon: "💸" },
+                    { label: "Ahorros", curr: currAhorros, prev: prevAhorros, diff: dA, color: "#f59e0b", icon: "🐷" },
+                    { label: "Pagos deuda", curr: currPagos, prev: prevPagos, diff: dP, color: "#8b5cf6", icon: "🤝" },
+                  ].map((item) => (
+                    <div key={item.label} className="p-3 rounded-lg" style={{ backgroundColor: "var(--bg-hover)" }}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span>{item.icon}</span>
+                        <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>{item.label}</span>
+                      </div>
+                      <p className="text-lg font-bold" style={{ color: item.color }}>{formatCurrency(item.curr)}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-xs font-medium" style={{ color: item.diff.up ? "#22c55e" : "#ef4444" }}>
+                          {item.diff.up ? "↑" : "↓"} {item.diff.val}%
+                        </span>
+                        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>vs mes anterior</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
           {loading ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}</div>
@@ -232,6 +328,21 @@ export default function ReportsPage() {
             </>
           ) : filteredByType.length > 0 ? (
             <>
+              <div className="flex items-center gap-2">
+                <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Ver montos en:</span>
+                {Object.keys(RATES).map((cur) => (
+                  <button key={cur} onClick={() => setShowCurrency(showCurrency === cur ? null : cur)}
+                    className="px-3 py-1 rounded-lg text-xs font-medium transition-all"
+                    style={{
+                      backgroundColor: showCurrency === cur ? "var(--primary)" : "var(--bg-card)",
+                      color: showCurrency === cur ? "#fff" : "var(--text-secondary)",
+                      border: `1px solid ${showCurrency === cur ? "var(--primary)" : "var(--border)"}`,
+                    }}>
+                    {cur}
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
@@ -259,6 +370,21 @@ export default function ReportsPage() {
                   <p className="text-xl font-bold" style={{ color: disponible >= 0 ? "#6366f1" : "#ef4444" }}>{formatCurrency(disponible)}</p>
                 </div>
               </div>
+
+              {showCurrency && showCurrency !== "PEN" && (
+                <div className="rounded-xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <p className="text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
+                    Equivalente en {showCurrency} (1 PEN = {RATES[showCurrency]} {showCurrency})
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Entradas: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalEntradas, "PEN", showCurrency), showCurrency)}</span></div>
+                    <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Salidas: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalSalidas, "PEN", showCurrency), showCurrency)}</span></div>
+                    <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Ahorros: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalAhorros, "PEN", showCurrency), showCurrency)}</span></div>
+                    <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Pagos: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalPagosDeuda, "PEN", showCurrency), showCurrency)}</span></div>
+                    <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Disponible: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(disponible, "PEN", showCurrency), showCurrency)}</span></div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>

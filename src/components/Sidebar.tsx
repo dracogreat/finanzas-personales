@@ -8,6 +8,7 @@ import { signOut, useSession } from "next-auth/react"
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/transactions", label: "Transacciones", icon: "💳" },
+  { href: "/recurring", label: "Recurrentes", icon: "🔄" },
   { href: "/budgets", label: "Presupuestos", icon: "🎯" },
   { href: "/goals", label: "Metas", icon: "🎯" },
   { href: "/import", label: "Importar", icon: "📥" },
@@ -60,19 +61,7 @@ export default function Sidebar({
       >
         <div className="p-5 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-3 mb-1">
-            <svg className="w-10 h-10" viewBox="0 0 40 40">
-              <defs>
-                <linearGradient id="sideLogo" x1="0%" y1="100%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#6366f1"/>
-                  <stop offset="100%" stopColor="#818cf8"/>
-                </linearGradient>
-              </defs>
-              <rect width="40" height="40" rx="10" fill="url(#sideLogo)"/>
-              <rect x="8" y="22" width="5" height="10" rx="1.5" fill="white" opacity="0.85"/>
-              <rect x="14.5" y="16" width="5" height="16" rx="1.5" fill="white" opacity="0.9"/>
-              <rect x="21" y="11" width="5" height="21" rx="1.5" fill="white" opacity="0.95"/>
-              <rect x="27.5" y="7" width="5" height="25" rx="1.5" fill="white"/>
-            </svg>
+            <img src="/logo.svg" alt="Logo" className="w-10 h-10" style={{ borderRadius: "12px" }} />
             <div>
               <h1 className="font-bold text-lg leading-tight" style={{ color: "var(--text)" }}>Finanzas</h1>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{session?.user?.name || "Mi cuenta"}</p>

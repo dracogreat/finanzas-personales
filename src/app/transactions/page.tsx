@@ -50,6 +50,15 @@ export default function TransactionsPage() {
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [filter, setFilter] = useState("all")
   const [search, setSearch] = useState("")
+  const [showFilters, setShowFilters] = useState(false)
+  const [minAmount, setMinAmount] = useState("")
+  const [maxAmount, setMaxAmount] = useState("")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
+  const [rules, setRules] = useState<Array<{ id: string; pattern: string; category: { name: string; icon: string } }>>([])
+  const [rulePattern, setRulePattern] = useState("")
+  const [ruleCategoryId, setRuleCategoryId] = useState("")
+  const [activeTab, setActiveTab] = useState<"categories" | "rules">("categories")
 
   function toLocalDate(date: Date | string) {
     const d = typeof date === "string" ? new Date(date) : date
@@ -71,7 +80,7 @@ export default function TransactionsPage() {
   })
 
   useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
-  useEffect(() => { Promise.all([fetchTransactions(), fetchCategories()]) }, [])
+  useEffect(() => { Promise.all([fetchTransactions(), fetchCategories(), fetchRules()]) }, [])
 
   function calcTotal(q: string, up: string) {
     const qty = parseFloat(q) || 0
@@ -92,6 +101,30 @@ export default function TransactionsPage() {
   async function fetchCategories() {
     try { const res = await fetch("/api/categories"); const data = await res.json(); setCategories(data) }
     catch { console.error("Error loading categories") }
+  }
+
+  async function fetchRules() {
+    try { const res = await fetch("/api/rules"); const data = await res.json(); setRules(data) }
+    catch { console.error("Error loading rules") }
+  }
+
+  async function handleCreateRule(e: React.FormEvent) {
+    e.preventDefault()
+    if (!rulePattern || !ruleCategoryId) { toast.error("Patrón y categoría requeridos"); return }
+    try {
+      const res = await fetch("/api/rules", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pattern: rulePattern, categoryId: ruleCategoryId }) })
+      if (!res.ok) { const data = await res.json(); toast.error(data.error || "Error"); return }
+      toast.success("Regla creada"); setRulePattern(""); setRuleCategoryId(""); fetchRules()
+    } catch { toast.error("Error al crear regla") }
+  }
+
+  async function handleDeleteRule(id: string) {
+    if (!confirm("¿Eliminar regla?")) return
+    try {
+      const res = await fetch(`/api/rules/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error()
+      toast.success("Regla eliminada"); fetchRules()
+    } catch { toast.error("Error al eliminar") }
   }
 
   function resetForm() {
@@ -153,6 +186,15 @@ export default function TransactionsPage() {
   const filteredTransactions = transactions
     .filter((t) => filter === "all" || t.type === filter)
     .filter((t) => !search || t.description.toLowerCase().includes(search.toLowerCase()) || t.category.name.toLowerCase().includes(search.toLowerCase()) || (t.notes && t.notes.toLowerCase().includes(search.toLowerCase())))
+    .filter((t) => !minAmount || t.amount >= parseFloat(minAmount))
+    .filter((t) => !maxAmount || t.amount <= parseFloat(maxAmount))
+    .filter((t) => {
+      if (!dateFrom && !dateTo) return true
+      const tDate = toLocalDate(t.date)
+      if (dateFrom && tDate < dateFrom) return false
+      if (dateTo && tDate > dateTo) return false
+      return true
+    })
 
   const getFilteredCategories = () => {
     if (form.type === "deuda" || form.type === "pago_deuda") return categories.filter((c) => c.type === "expense")
@@ -222,7 +264,45 @@ export default function TransactionsPage() {
                 style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }}
                 placeholder="Buscar..." />
             </div>
+            <button onClick={() => setShowFilters(!showFilters)} className="px-3 py-1.5 rounded-xl text-sm border transition-colors flex items-center gap-1"
+              style={{ color: showFilters ? "var(--primary)" : "var(--text-secondary)", borderColor: showFilters ? "var(--primary)" : "var(--border)", backgroundColor: "var(--bg-card)" }}>
+              🔽 Filtros
+            </button>
           </div>
+
+          {showFilters && (
+            <div className="flex flex-wrap items-end gap-3 p-3 rounded-xl" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Monto mín.</label>
+                <input type="number" min="0" step="0.01" value={minAmount} onChange={(e) => setMinAmount(e.target.value)}
+                  className="w-28 px-3 py-1.5 rounded-lg text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }} placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Monto máx.</label>
+                <input type="number" min="0" step="0.01" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value)}
+                  className="w-28 px-3 py-1.5 rounded-lg text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }} placeholder="∞" />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Desde</label>
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }} />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Hasta</label>
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }} />
+              </div>
+              {(minAmount || maxAmount || dateFrom || dateTo) && (
+                <button onClick={() => { setMinAmount(""); setMaxAmount(""); setDateFrom(""); setDateTo("") }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ color: "#ef4444", backgroundColor: "rgba(239,68,68,0.1)" }}>
+                  Limpiar filtros
+                </button>
+              )}
+              <div className="text-xs ml-auto" style={{ color: "var(--text-secondary)" }}>
+                {filteredTransactions.length} resultado{filteredTransactions.length !== 1 ? "s" : ""}
+              </div>
+            </div>
+          )}
 
           {showForm && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -361,44 +441,89 @@ export default function TransactionsPage() {
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="rounded-2xl w-full max-w-md p-6 max-h-[85vh] overflow-y-auto shadow-2xl" style={{ backgroundColor: "var(--bg-card)" }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>Categorías</h2>
+                  <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>Configuración</h2>
                   <button onClick={() => setShowCategoryManager(false)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)" }}>✕</button>
                 </div>
-                <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="flex flex-wrap gap-2 mb-4">
-                  <input type="text" required value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                    className="flex-1 min-w-[120px] px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }} placeholder="Nombre" />
-                  <select value={categoryForm.type} onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}
-                    className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
-                    <option value="expense">Gasto</option><option value="income">Ingreso</option><option value="saving">Ahorro</option>
-                  </select>
-                  <input type="color" value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                    className="w-10 h-10 rounded-xl cursor-pointer border" style={{ borderColor: "var(--border)" }} />
-                  <select value={categoryForm.icon} onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
-                    className="px-2 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
-                    {iconOptions.map((ico) => (<option key={ico} value={ico}>{ico}</option>))}
-                  </select>
-                  <button type="submit" className="px-4 py-2 text-white rounded-xl text-sm font-medium transition-colors" style={{ backgroundColor: "var(--primary)" }}>
-                    {editingCategory ? "Actualizar" : "Agregar"}
+
+                <div className="flex gap-2 mb-4">
+                  <button onClick={() => setActiveTab("categories")} className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
+                    style={{ backgroundColor: activeTab === "categories" ? "var(--primary)" : "var(--bg-hover)", color: activeTab === "categories" ? "#fff" : "var(--text-secondary)" }}>
+                    📁 Categorías
                   </button>
-                </form>
-                <div className="space-y-1">
-                  {categories.map((cat) => (
-                    <div key={cat.id} className="flex items-center justify-between p-2.5 rounded-xl" style={{ color: "var(--text)" }}>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{cat.icon}</span>
-                        <span className="text-sm font-medium">{cat.name}</span>
-                        <span className="text-xs px-1.5 py-0.5 rounded-md"
-                          style={{ backgroundColor: cat.type === "income" ? "rgba(34,197,94,0.15)" : cat.type === "saving" ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)", color: cat.type === "income" ? "#22c55e" : cat.type === "saving" ? "#f59e0b" : "#ef4444" }}>
-                          {cat.type === "income" ? "Ingreso" : cat.type === "saving" ? "Ahorro" : "Gasto"}
-                        </span>
-                      </div>
-                      <div className="flex gap-1">
-                        <button onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, type: cat.type, color: cat.color, icon: cat.icon }); setShowCategoryManager(true) }} className="p-1.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>✏️</button>
-                        <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>🗑️</button>
-                      </div>
-                    </div>
-                  ))}
+                  <button onClick={() => setActiveTab("rules")} className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
+                    style={{ backgroundColor: activeTab === "rules" ? "var(--primary)" : "var(--bg-hover)", color: activeTab === "rules" ? "#fff" : "var(--text-secondary)" }}>
+                    ⚡ Reglas
+                  </button>
                 </div>
+
+                {activeTab === "categories" ? (
+                  <>
+                    <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="flex flex-wrap gap-2 mb-4">
+                      <input type="text" required value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                        className="flex-1 min-w-[120px] px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }} placeholder="Nombre" />
+                      <select value={categoryForm.type} onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}
+                        className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
+                        <option value="expense">Gasto</option><option value="income">Ingreso</option><option value="saving">Ahorro</option>
+                      </select>
+                      <input type="color" value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                        className="w-10 h-10 rounded-xl cursor-pointer border" style={{ borderColor: "var(--border)" }} />
+                      <select value={categoryForm.icon} onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
+                        className="px-2 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
+                        {iconOptions.map((ico) => (<option key={ico} value={ico}>{ico}</option>))}
+                      </select>
+                      <button type="submit" className="px-4 py-2 text-white rounded-xl text-sm font-medium transition-colors" style={{ backgroundColor: "var(--primary)" }}>
+                        {editingCategory ? "Actualizar" : "Agregar"}
+                      </button>
+                    </form>
+                    <div className="space-y-1">
+                      {categories.map((cat) => (
+                        <div key={cat.id} className="flex items-center justify-between p-2.5 rounded-xl" style={{ color: "var(--text)" }}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{cat.icon}</span>
+                            <span className="text-sm font-medium">{cat.name}</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-md"
+                              style={{ backgroundColor: cat.type === "income" ? "rgba(34,197,94,0.15)" : cat.type === "saving" ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)", color: cat.type === "income" ? "#22c55e" : cat.type === "saving" ? "#f59e0b" : "#ef4444" }}>
+                              {cat.type === "income" ? "Ingreso" : cat.type === "saving" ? "Ahorro" : "Gasto"}
+                            </span>
+                          </div>
+                          <div className="flex gap-1">
+                            <button onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, type: cat.type, color: cat.color, icon: cat.icon }); setShowCategoryManager(true) }} className="p-1.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                            <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs mb-3" style={{ color: "var(--text-secondary)" }}>Define patrones para auto-categorizar transacciones</p>
+                    <form onSubmit={handleCreateRule} className="flex flex-wrap gap-2 mb-4">
+                      <input type="text" required value={rulePattern} onChange={(e) => setRulePattern(e.target.value)}
+                        className="flex-1 min-w-[120px] px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }} placeholder='Ej: "netflix", "bcp"' />
+                      <select value={ruleCategoryId} onChange={(e) => setRuleCategoryId(e.target.value)}
+                        className="flex-1 min-w-[120px] px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)", color: "var(--text)" }}>
+                        <option value="">Categoría</option>
+                        {categories.map((c) => (<option key={c.id} value={c.id}>{c.icon} {c.name}</option>))}
+                      </select>
+                      <button type="submit" className="px-4 py-2 text-white rounded-xl text-sm font-medium" style={{ backgroundColor: "var(--primary)" }}>Agregar</button>
+                    </form>
+                    <div className="space-y-1">
+                      {rules.length > 0 ? rules.map((r) => (
+                        <div key={r.id} className="flex items-center justify-between p-2.5 rounded-xl" style={{ color: "var(--text)" }}>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span>⚡</span>
+                            <span className="font-mono px-2 py-0.5 rounded" style={{ backgroundColor: "var(--bg-hover)" }}>"{r.pattern}"</span>
+                            <span>→</span>
+                            <span>{r.category.icon} {r.category.name}</span>
+                          </div>
+                          <button onClick={() => handleDeleteRule(r.id)} className="p-1.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                        </div>
+                      )) : (
+                        <p className="text-center py-4 text-sm" style={{ color: "var(--text-secondary)" }}>Sin reglas definidas</p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

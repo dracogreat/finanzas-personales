@@ -32,7 +32,7 @@ export async function GET(request: Request) {
         where: {
           userId: session.user.id,
           categoryId: budget.categoryId,
-          type: "expense",
+          type: "salida",
           date: {
             gte: new Date(y, m - 1, 1),
             lt: new Date(y, m, 1),

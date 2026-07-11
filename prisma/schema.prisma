@@ -18,6 +18,8 @@ model User {
   budgets      Budget[]
   goals        Goal[]
   balance      Balance?
+  recurring    RecurringTransaction[]
+  rules        CategoryRule[]
 }
 
 model Category {
@@ -30,6 +32,8 @@ model Category {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
   budgets      Budget[]
+  recurring    RecurringTransaction[]
+  rules        CategoryRule[]
 }
 
 model Transaction {
@@ -80,4 +84,30 @@ model Balance {
   initialSavings  Float  @default(0)
   userId          String @unique
   user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RecurringTransaction {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  type        String
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  frequency   String
+  nextDate    DateTime
+  active      Boolean  @default(true)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model CategoryRule {
+  id         String   @id @default(cuid())
+  pattern    String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  @@unique([userId, pattern])
 }
