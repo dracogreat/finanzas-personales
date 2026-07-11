@@ -110,7 +110,7 @@ export default function ReportsPage() {
   const totalDeudas = filteredByType.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
   const totalPagosDeuda = filteredByType.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
   const initialSavings = balance?.initialSavings || 0
-  const ahorros = initialSavings + totalAhorros - totalRetiros
+  const ahorros = selectedDay ? totalAhorros - totalRetiros : initialSavings + totalAhorros - totalRetiros
   const disponible = totalEntradas - totalSalidas - totalAhorros + totalRetiros + totalDeudas - totalPagosDeuda
 
   const byCategory = filteredByType
