@@ -32,10 +32,16 @@ type Transaction = {
   category: { id: string; name: string; color: string; icon: string }
 }
 
+type Balance = {
+  id: string
+  initialSavings: number
+}
+
 export default function ReportsPage() {
   const { data: session, status } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [balance, setBalance] = useState<Balance | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState<string>("")
@@ -43,7 +49,7 @@ export default function ReportsPage() {
   const [typeFilter, setTypeFilter] = useState("all")
 
   useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
-  useEffect(() => { fetchTransactions() }, [selectedYear, selectedMonth, selectedDay])
+  useEffect(() => { Promise.all([fetchTransactions(), fetchBalance()]) }, [selectedYear, selectedMonth, selectedDay])
 
   async function fetchTransactions() {
     setLoading(true)
@@ -61,6 +67,11 @@ export default function ReportsPage() {
       const data = await res.json()
       setTransactions(data)
     } catch { toast.error("Error al cargar datos") } finally { setLoading(false) }
+  }
+
+  async function fetchBalance() {
+    try { const res = await fetch("/api/balance"); const data = await res.json(); setBalance(data) }
+    catch { console.error("Error fetching balance") }
   }
 
   async function handleExport() {
@@ -98,6 +109,8 @@ export default function ReportsPage() {
   const totalRetiros = filteredByType.filter((t) => t.type === "retiro_ahorro").reduce((s, t) => s + t.amount, 0)
   const totalDeudas = filteredByType.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
   const totalPagosDeuda = filteredByType.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
+  const initialSavings = balance?.initialSavings || 0
+  const ahorros = initialSavings + totalAhorros - totalRetiros
   const disponible = totalEntradas - totalSalidas - totalAhorros + totalRetiros + totalDeudas - totalPagosDeuda
 
   const byCategory = filteredByType
@@ -219,7 +232,7 @@ export default function ReportsPage() {
             </>
           ) : filteredByType.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Entradas</p>
@@ -229,6 +242,11 @@ export default function ReportsPage() {
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(239,68,68,0.12)" }}>💸</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Salidas</p>
                   <p className="text-xl font-bold" style={{ color: "#ef4444" }}>{formatCurrency(totalSalidas)}</p>
+                </div>
+                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorros</p>
+                  <p className="text-xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(ahorros)}</p>
                 </div>
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(139,92,246,0.12)" }}>🤝</div>
