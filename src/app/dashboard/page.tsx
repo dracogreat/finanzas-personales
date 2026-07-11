@@ -6,7 +6,6 @@ import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { CardSkeleton, ChartSkeleton, ListSkeleton } from "@/components/Skeleton"
-import toast from "react-hot-toast"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area,
@@ -56,8 +55,6 @@ export default function DashboardPage() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [balance, setBalance] = useState<Balance | null>(null)
   const [loading, setLoading] = useState(true)
-  const [editingSavings, setEditingSavings] = useState(false)
-  const [savingsInput, setSavingsInput] = useState("")
 
   useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
   useEffect(() => { Promise.all([fetchTransactions(), fetchBudgets(), fetchBalance()]) }, [])
@@ -81,20 +78,7 @@ export default function DashboardPage() {
     if (loadedRef.current >= 3) setLoading(false)
   }
 
-  async function saveSavings() {
-    const val = parseFloat(savingsInput)
-    if (isNaN(val)) { toast.error("Monto inválido"); return }
-    try {
-      const res = await fetch("/api/balance", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initialSavings: val }) })
-      if (!res.ok) throw new Error()
-      setBalance({ ...balance!, initialSavings: val })
-      setEditingSavings(false)
-      toast.success("Ahorro inicial actualizado")
-    } catch { toast.error("Error al guardar") }
-  }
-
   const initialBalance = balance?.initialBalance || 0
-  const initialSavings = balance?.initialSavings || 0
 
   const totalEntradas = transactions.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
   const totalSalidas = transactions.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
@@ -102,7 +86,6 @@ export default function DashboardPage() {
   const totalRetirosAhorro = transactions.filter((t) => t.type === "retiro_ahorro").reduce((s, t) => s + t.amount, 0)
   const totalDeudas = transactions.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
   const totalPagosDeuda = transactions.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
-  const ahorros = initialSavings + totalAhorros - totalRetirosAhorro
   const disponible = initialBalance + totalEntradas - totalSalidas - totalAhorros + totalRetirosAhorro - totalPagosDeuda
 
   const today = new Date()
@@ -195,7 +178,7 @@ export default function DashboardPage() {
           ) : (
             <>
               {/* Hoy */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>📅</div>
@@ -211,30 +194,6 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ingreso de hoy</p>
                       <p className="text-lg font-bold" style={{ color: "#22c55e" }}>{formatCurrency(ingresoHoy)}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
-                    <div>
-                      <div className="flex items-center gap-1">
-                        <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorros</p>
-                        {!editingSavings && (
-                          <button onClick={() => { setSavingsInput(String(initialSavings)); setEditingSavings(true) }}
-                            className="text-xs px-1.5 py-0.5 rounded-md" style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-hover)" }}>✏️</button>
-                        )}
-                      </div>
-                      {editingSavings ? (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <input type="number" step="0.01" value={savingsInput} onChange={(e) => setSavingsInput(e.target.value)}
-                            className="w-24 px-2 py-0.5 rounded-lg text-sm font-bold outline-none" style={{ border: "1px solid #f59e0b", backgroundColor: "var(--bg)", color: "var(--text)" }} autoFocus />
-                          <button onClick={saveSavings} className="text-xs px-2 py-0.5 rounded-lg text-white" style={{ backgroundColor: "#f59e0b" }}>✓</button>
-                          <button onClick={() => setEditingSavings(false)} className="text-xs px-2 py-0.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>✕</button>
-                        </div>
-                      ) : (
-                        <p className="text-lg font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(ahorros)}</p>
-                      )}
                     </div>
                   </div>
                 </div>
