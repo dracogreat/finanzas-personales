@@ -12,6 +12,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; 
   entrada: { label: "Entrada", icon: "💰", color: "#22c55e", bg: "rgba(34,197,94,0.12)", sign: "+" },
   salida: { label: "Salida", icon: "💸", color: "#ef4444", bg: "rgba(239,68,68,0.12)", sign: "-" },
   saving: { label: "Ahorro", icon: "🐷", color: "#f59e0b", bg: "rgba(245,158,11,0.12)", sign: "-" },
+  retiro_ahorro: { label: "Retiro ahorro", icon: "🏧", color: "#f97316", bg: "rgba(249,115,22,0.12)", sign: "+" },
   deuda: { label: "Deuda", icon: "🏦", color: "#3b82f6", bg: "rgba(59,130,246,0.12)", sign: "+" },
   pago_deuda: { label: "Pago deuda", icon: "🤝", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)", sign: "-" },
 }
@@ -155,7 +156,7 @@ export default function TransactionsPage() {
 
   const getFilteredCategories = () => {
     if (form.type === "deuda" || form.type === "pago_deuda") return categories.filter((c) => c.type === "expense")
-    if (form.type === "saving") return categories.filter((c) => c.type === "saving")
+    if (form.type === "saving" || form.type === "retiro_ahorro") return categories.filter((c) => c.type === "saving")
     if (form.type === "entrada") return categories.filter((c) => c.type === "income")
     return categories.filter((c) => c.type === "expense")
   }
@@ -198,7 +199,7 @@ export default function TransactionsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {[["all", "Todas", "📋"], ["entrada", "Entradas", "💰"], ["salida", "Salidas", "💸"], ["saving", "Ahorros", "🐷"], ["deuda", "Deudas", "🏦"], ["pago_deuda", "Pagos", "🤝"]].map(([key, label, icon]) => (
+            {[["all", "Todas", "📋"], ["entrada", "Entradas", "💰"], ["salida", "Salidas", "💸"], ["saving", "Ahorros", "🐷"], ["retiro_ahorro", "Retiros", "🏧"], ["deuda", "Deudas", "🏦"], ["pago_deuda", "Pagos", "🤝"]].map(([key, label, icon]) => (
               <button key={key} onClick={() => setFilter(key)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border"
                 style={{
                   backgroundColor: filter === key ? (TYPE_CONFIG[key]?.color || "var(--primary)") : "var(--bg-card)",
@@ -232,7 +233,7 @@ export default function TransactionsPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-5 gap-1.5 p-1 rounded-xl" style={{ backgroundColor: "var(--bg-hover)" }}>
+                  <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl" style={{ backgroundColor: "var(--bg-hover)" }}>
                     {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
                       <button key={key} type="button" onClick={() => setForm({ ...form, type: key, categoryId: "" })}
                         className="flex flex-col items-center gap-0.5 py-2 rounded-lg text-xs font-medium transition-all"

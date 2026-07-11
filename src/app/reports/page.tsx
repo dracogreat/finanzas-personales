@@ -18,6 +18,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; 
   entrada: { label: "Entrada", icon: "💰", color: "#22c55e", bg: "rgba(34,197,94,0.12)", sign: "+" },
   salida: { label: "Salida", icon: "💸", color: "#ef4444", bg: "rgba(239,68,68,0.12)", sign: "-" },
   saving: { label: "Ahorro", icon: "🐷", color: "#f59e0b", bg: "rgba(245,158,11,0.12)", sign: "-" },
+  retiro_ahorro: { label: "Retiro ahorro", icon: "🏧", color: "#f97316", bg: "rgba(249,115,22,0.12)", sign: "+" },
   deuda: { label: "Deuda", icon: "🏦", color: "#3b82f6", bg: "rgba(59,130,246,0.12)", sign: "+" },
   pago_deuda: { label: "Pago deuda", icon: "🤝", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)", sign: "-" },
 }
@@ -38,16 +39,23 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState<string>("")
+  const [selectedDay, setSelectedDay] = useState<string>("")
+  const [typeFilter, setTypeFilter] = useState("all")
 
   useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
-  useEffect(() => { fetchTransactions() }, [selectedYear, selectedMonth])
+  useEffect(() => { fetchTransactions() }, [selectedYear, selectedMonth, selectedDay])
 
   async function fetchTransactions() {
     setLoading(true)
     try {
       let url = "/api/transactions"
       const params = new URLSearchParams()
-      if (selectedMonth) { params.set("month", selectedMonth); params.set("year", String(selectedYear)) }
+      if (selectedDay) {
+        params.set("date", selectedDay)
+      } else if (selectedMonth) {
+        params.set("month", selectedMonth)
+        params.set("year", String(selectedYear))
+      }
       if (params.toString()) url += `?${params.toString()}`
       const res = await fetch(url)
       const data = await res.json()
@@ -59,28 +67,40 @@ export default function ReportsPage() {
     try {
       let url = "/api/export"
       const params = new URLSearchParams()
-      if (selectedMonth) { params.set("month", selectedMonth); params.set("year", String(selectedYear)) }
+      if (selectedDay) {
+        params.set("date", selectedDay)
+      } else if (selectedMonth) {
+        params.set("month", selectedMonth)
+        params.set("year", String(selectedYear))
+      }
       if (params.toString()) url += `?${params.toString()}`
       const res = await fetch(url)
       const blob = await res.blob()
       const urlBlob = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = urlBlob
-      a.download = selectedMonth ? `transacciones-${selectedYear}-${selectedMonth.padStart(2, "0")}.csv` : "transacciones.csv"
+      a.download = selectedDay
+        ? `transacciones-${selectedDay}.csv`
+        : selectedMonth
+          ? `transacciones-${selectedYear}-${selectedMonth.padStart(2, "0")}.csv`
+          : "transacciones.csv"
       a.click()
       window.URL.revokeObjectURL(urlBlob)
       toast.success("Archivo descargado")
     } catch { toast.error("Error al exportar") }
   }
 
-  const totalEntradas = transactions.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
-  const totalSalidas = transactions.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
-  const totalAhorros = transactions.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
-  const totalDeudas = transactions.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
-  const totalPagosDeuda = transactions.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
-  const disponible = totalEntradas - totalSalidas - totalAhorros + totalDeudas - totalPagosDeuda
+  const filteredByType = typeFilter === "all" ? transactions : transactions.filter((t) => t.type === typeFilter)
 
-  const byCategory = transactions
+  const totalEntradas = filteredByType.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
+  const totalSalidas = filteredByType.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
+  const totalAhorros = filteredByType.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+  const totalRetiros = filteredByType.filter((t) => t.type === "retiro_ahorro").reduce((s, t) => s + t.amount, 0)
+  const totalDeudas = filteredByType.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
+  const totalPagosDeuda = filteredByType.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
+  const disponible = totalEntradas - totalSalidas - totalAhorros + totalRetiros + totalDeudas - totalPagosDeuda
+
+  const byCategory = filteredByType
     .filter((t) => t.type === "salida")
     .reduce<Record<string, { name: string; value: number; color: string }>>((acc, t) => {
       const key = t.category.name
@@ -90,7 +110,7 @@ export default function ReportsPage() {
     }, {})
   const pieData = Object.values(byCategory).sort((a, b) => b.value - a.value)
 
-  const byDay = transactions.reduce<Record<string, { date: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
+  const byDay = filteredByType.reduce<Record<string, { date: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
     const d = new Date(t.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
     if (!acc[key]) acc[key] = { date: key, income: 0, expense: 0, saving: 0, deuda: 0, pagoDeuda: 0 }
@@ -103,7 +123,7 @@ export default function ReportsPage() {
   }, {})
   const lineData = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
 
-  const byMonth = transactions.reduce<Record<string, { month: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
+  const byMonth = filteredByType.reduce<Record<string, { month: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
     const d = new Date(t.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
     if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0, deuda: 0, pagoDeuda: 0 }
@@ -136,7 +156,7 @@ export default function ReportsPage() {
         <div className="flex-1 p-4 md:p-6 space-y-6">
           <div><Skeleton className="h-8 w-32 mb-2" /><Skeleton className="h-4 w-48" /></div>
           <div className="flex gap-3"><Skeleton className="h-10 w-full max-w-[200px]" /><Skeleton className="h-10 w-full max-w-[100px]" /><Skeleton className="h-10 w-36" /></div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">{Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}</div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><ChartSkeleton /><ChartSkeleton /></div>
           <ChartSkeleton /><ListSkeleton />
         </div>
@@ -162,11 +182,13 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}
+            <select value={selectedMonth} onChange={(e) => { setSelectedMonth(e.target.value); setSelectedDay("") }}
               className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }}>
               <option value="">Todo el año</option>
               {months.slice(1).map((name, i) => (<option key={i + 1} value={String(i + 1)}>{name}</option>))}
             </select>
+            <input type="date" value={selectedDay} onChange={(e) => { setSelectedDay(e.target.value); setSelectedMonth("") }}
+              className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }} />
             <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}
               className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text)" }}>
               {[2024, 2025, 2026, 2027].map((y) => (<option key={y} value={y}>{y}</option>))}
@@ -176,15 +198,28 @@ export default function ReportsPage() {
             </button>
           </div>
 
+          <div className="flex flex-wrap gap-2">
+            {[["all", "Todos", "📋"], ["entrada", "Entradas", "💰"], ["salida", "Salidas", "💸"], ["saving", "Ahorros", "🐷"], ["retiro_ahorro", "Retiros", "🏧"], ["deuda", "Deudas", "🏦"], ["pago_deuda", "Pagos", "🤝"]].map(([key, label, icon]) => (
+              <button key={key} onClick={() => setTypeFilter(key)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border"
+                style={{
+                  backgroundColor: typeFilter === key ? (TYPE_CONFIG[key]?.color || "var(--primary)") : "var(--bg-card)",
+                  color: typeFilter === key ? "#fff" : "var(--text-secondary)",
+                  borderColor: typeFilter === key ? (TYPE_CONFIG[key]?.color || "var(--primary)") : "var(--border)",
+                }}>
+                <span>{icon}</span>{label}
+              </button>
+            ))}
+          </div>
+
           {loading ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">{Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}</div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><ChartSkeleton /><ChartSkeleton /></div>
               <ChartSkeleton /><ListSkeleton />
             </>
-          ) : transactions.length > 0 ? (
+          ) : filteredByType.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Entradas</p>
@@ -194,11 +229,6 @@ export default function ReportsPage() {
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(239,68,68,0.12)" }}>💸</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Salidas</p>
                   <p className="text-xl font-bold" style={{ color: "#ef4444" }}>{formatCurrency(totalSalidas)}</p>
-                </div>
-                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
-                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorros</p>
-                  <p className="text-xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(totalAhorros)}</p>
                 </div>
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(139,92,246,0.12)" }}>🤝</div>
@@ -257,7 +287,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {!selectedMonth && (
+              {!selectedMonth && !selectedDay && (
                 <div className="rounded-xl p-6 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-lg">📊</span>
@@ -296,7 +326,7 @@ export default function ReportsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {transactions.slice(0, 20).map((t) => {
+                      {filteredByType.slice(0, 20).map((t) => {
                         const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.salida
                         return (
                           <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}

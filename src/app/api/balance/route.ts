@@ -15,7 +15,7 @@ export async function GET() {
 
   if (!balance) {
     balance = await prisma.balance.create({
-      data: { userId: session.user.id, initialBalance: 0 },
+      data: { userId: session.user.id, initialBalance: 0, initialSavings: 0 },
     })
   }
 
@@ -28,12 +28,16 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   }
 
-  const { initialBalance } = await request.json()
+  const { initialBalance, initialSavings } = await request.json()
+
+  const data: Record<string, number> = {}
+  if (initialBalance !== undefined) data.initialBalance = parseFloat(initialBalance)
+  if (initialSavings !== undefined) data.initialSavings = parseFloat(initialSavings)
 
   const balance = await prisma.balance.upsert({
     where: { userId: session.user.id },
-    update: { initialBalance: parseFloat(initialBalance) },
-    create: { userId: session.user.id, initialBalance: parseFloat(initialBalance) },
+    update: data,
+    create: { userId: session.user.id, initialBalance: data.initialBalance || 0, initialSavings: data.initialSavings || 0 },
   })
 
   return NextResponse.json(balance)

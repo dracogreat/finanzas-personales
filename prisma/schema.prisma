@@ -75,8 +75,9 @@ model Budget {
 }
 
 model Balance {
-  id             String @id @default(cuid())
-  initialBalance Float  @default(0)
-  userId         String @unique
-  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String @id @default(cuid())
+  initialBalance  Float  @default(0)
+  initialSavings  Float  @default(0)
+  userId          String @unique
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

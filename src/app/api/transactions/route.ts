@@ -12,12 +12,18 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const month = searchParams.get("month")
   const year = searchParams.get("year")
+  const date = searchParams.get("date")
   const type = searchParams.get("type")
   const categoryId = searchParams.get("categoryId")
 
   const where: Record<string, unknown> = { userId: session.user.id }
 
-  if (month && year) {
+  if (date) {
+    const d = new Date(date + "T12:00:00")
+    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+    where.date = { gte: start, lt: end }
+  } else if (month && year) {
     const m = parseInt(month)
     const y = parseInt(year)
     where.date = {

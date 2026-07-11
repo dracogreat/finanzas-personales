@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { CardSkeleton, ChartSkeleton, ListSkeleton } from "@/components/Skeleton"
+import toast from "react-hot-toast"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area,
@@ -17,6 +18,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; 
   entrada: { label: "Entrada", icon: "💰", color: "#22c55e", bg: "rgba(34,197,94,0.12)", sign: "+" },
   salida: { label: "Salida", icon: "💸", color: "#ef4444", bg: "rgba(239,68,68,0.12)", sign: "-" },
   saving: { label: "Ahorro", icon: "🐷", color: "#f59e0b", bg: "rgba(245,158,11,0.12)", sign: "-" },
+  retiro_ahorro: { label: "Retiro ahorro", icon: "🏧", color: "#f97316", bg: "rgba(249,115,22,0.12)", sign: "+" },
   deuda: { label: "Deuda", icon: "🏦", color: "#3b82f6", bg: "rgba(59,130,246,0.12)", sign: "+" },
   pago_deuda: { label: "Pago deuda", icon: "🤝", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)", sign: "-" },
 }
@@ -44,6 +46,7 @@ type Budget = {
 type Balance = {
   id: string
   initialBalance: number
+  initialSavings: number
 }
 
 export default function DashboardPage() {
@@ -53,6 +56,8 @@ export default function DashboardPage() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [balance, setBalance] = useState<Balance | null>(null)
   const [loading, setLoading] = useState(true)
+  const [editingSavings, setEditingSavings] = useState(false)
+  const [savingsInput, setSavingsInput] = useState("")
 
   useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
   useEffect(() => { Promise.all([fetchTransactions(), fetchBudgets(), fetchBalance()]) }, [])
@@ -70,14 +75,34 @@ export default function DashboardPage() {
     catch { console.error("Error fetching balance") } finally { setLoading(false) }
   }
 
+  async function saveSavings() {
+    const val = parseFloat(savingsInput)
+    if (isNaN(val)) { toast.error("Monto inválido"); return }
+    try {
+      const res = await fetch("/api/balance", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initialSavings: val }) })
+      if (!res.ok) throw new Error()
+      setBalance({ ...balance!, initialSavings: val })
+      setEditingSavings(false)
+      toast.success("Ahorro inicial actualizado")
+    } catch { toast.error("Error al guardar") }
+  }
+
   const initialBalance = balance?.initialBalance || 0
+  const initialSavings = balance?.initialSavings || 0
 
   const totalEntradas = transactions.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
   const totalSalidas = transactions.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
   const totalAhorros = transactions.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+  const totalRetirosAhorro = transactions.filter((t) => t.type === "retiro_ahorro").reduce((s, t) => s + t.amount, 0)
   const totalDeudas = transactions.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
   const totalPagosDeuda = transactions.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
-  const disponible = initialBalance + totalEntradas - totalSalidas - totalAhorros - totalPagosDeuda
+  const ahorros = initialSavings + totalAhorros - totalRetirosAhorro
+  const disponible = initialBalance + totalEntradas - totalSalidas - totalAhorros + totalRetirosAhorro - totalPagosDeuda
+
+  const today = new Date()
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+  const gastoHoy = transactions.filter((t) => t.type === "salida" && new Date(t.date).toISOString().split("T")[0] === todayKey).reduce((s, t) => s + t.amount, 0)
+  const ingresoHoy = transactions.filter((t) => t.type === "entrada" && new Date(t.date).toISOString().split("T")[0] === todayKey).reduce((s, t) => s + t.amount, 0)
 
   const expensesByCategory = transactions
     .filter((t) => t.type === "salida")
@@ -89,13 +114,14 @@ export default function DashboardPage() {
     }, {})
   const pieData = Object.values(expensesByCategory)
 
-  const monthlyData = transactions.reduce<Record<string, { month: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
+  const monthlyData = transactions.reduce<Record<string, { month: string; income: number; expense: number; saving: number; retiroAh: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
     const date = new Date(t.date)
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-    if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0, deuda: 0, pagoDeuda: 0 }
+    if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0, retiroAh: 0, deuda: 0, pagoDeuda: 0 }
     if (t.type === "entrada") acc[key].income += t.amount
     else if (t.type === "salida") acc[key].expense += t.amount
     else if (t.type === "saving") acc[key].saving += t.amount
+    else if (t.type === "retiro_ahorro") acc[key].retiroAh += t.amount
     else if (t.type === "deuda") acc[key].deuda += t.amount
     else if (t.type === "pago_deuda") acc[key].pagoDeuda += t.amount
     return acc
@@ -105,7 +131,7 @@ export default function DashboardPage() {
 
   const areaData = barData.reduce<Array<{ month: string; balance: number }>>((acc, m) => {
     const prev = acc.length > 0 ? acc[acc.length - 1].balance : initialBalance
-    acc.push({ month: m.month, balance: prev + m.income - m.expense - m.saving + m.deuda - m.pagoDeuda })
+    acc.push({ month: m.month, balance: prev + m.income - m.expense - m.saving + m.retiroAh + m.deuda - m.pagoDeuda })
     return acc
   }, [])
 
@@ -156,13 +182,59 @@ export default function DashboardPage() {
 
           {loading ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">{Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}</div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><ChartSkeleton /><ChartSkeleton /></div>
               <ListSkeleton />
             </>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              {/* Hoy */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>📅</div>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Gasto de hoy</p>
+                      <p className="text-lg font-bold" style={{ color: "#ef4444" }}>{formatCurrency(gastoHoy)}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💵</div>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ingreso de hoy</p>
+                      <p className="text-lg font-bold" style={{ color: "#22c55e" }}>{formatCurrency(ingresoHoy)}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorros</p>
+                        {!editingSavings && (
+                          <button onClick={() => { setSavingsInput(String(initialSavings)); setEditingSavings(true) }}
+                            className="text-xs px-1.5 py-0.5 rounded-md" style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-hover)" }}>✏️</button>
+                        )}
+                      </div>
+                      {editingSavings ? (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <input type="number" step="0.01" value={savingsInput} onChange={(e) => setSavingsInput(e.target.value)}
+                            className="w-24 px-2 py-0.5 rounded-lg text-sm font-bold outline-none" style={{ border: "1px solid #f59e0b", backgroundColor: "var(--bg)", color: "var(--text)" }} autoFocus />
+                          <button onClick={saveSavings} className="text-xs px-2 py-0.5 rounded-lg text-white" style={{ backgroundColor: "#f59e0b" }}>✓</button>
+                          <button onClick={() => setEditingSavings(false)} className="text-xs px-2 py-0.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>✕</button>
+                        </div>
+                      ) : (
+                        <p className="text-lg font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(ahorros)}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-2" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Entradas</p>
@@ -172,11 +244,6 @@ export default function DashboardPage() {
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-2" style={{ backgroundColor: "rgba(239,68,68,0.12)" }}>💸</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Salidas</p>
                   <p className="text-lg font-bold" style={{ color: "#ef4444" }}>{formatCurrency(totalSalidas)}</p>
-                </div>
-                <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-2" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
-                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorros</p>
-                  <p className="text-lg font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(totalAhorros)}</p>
                 </div>
                 <div className="rounded-2xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-2" style={{ backgroundColor: "rgba(59,130,246,0.12)" }}>🏦</div>

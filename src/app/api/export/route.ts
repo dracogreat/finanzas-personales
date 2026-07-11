@@ -12,9 +12,16 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const month = searchParams.get("month")
   const year = searchParams.get("year")
+  const date = searchParams.get("date")
 
   const where: Record<string, unknown> = { userId: session.user.id }
-  if (month && year) {
+
+  if (date) {
+    const d = new Date(date + "T12:00:00")
+    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+    where.date = { gte: start, lt: end }
+  } else if (month && year) {
     const m = parseInt(month)
     const y = parseInt(year)
     where.date = {
@@ -32,7 +39,7 @@ export async function GET(request: Request) {
   const headers = ["Fecha", "Tipo", "Categoría", "Descripción", "Cantidad", "P. Unitario", "Total", "Observaciones"]
   const rows = transactions.map((t) => [
     new Date(t.date).toLocaleDateString("es-PE"),
-    t.type === "entrada" ? "Entrada" : t.type === "salida" ? "Salida" : t.type === "saving" ? "Ahorro" : t.type === "deuda" ? "Deuda" : t.type === "pago_deuda" ? "Pago de deuda" : t.type,
+    t.type === "entrada" ? "Entrada" : t.type === "salida" ? "Salida" : t.type === "saving" ? "Ahorro" : t.type === "retiro_ahorro" ? "Retiro ahorro" : t.type === "deuda" ? "Deuda" : t.type === "pago_deuda" ? "Pago de deuda" : t.type,
     t.category.name,
     t.description,
     t.quantity ? String(t.quantity) : "",
