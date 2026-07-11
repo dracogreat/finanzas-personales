@@ -38,13 +38,6 @@ export default function Sidebar({
     document.documentElement.classList.toggle("dark", next)
   }
 
-  const userInitials = (session?.user?.name || "U")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
-
   return (
     <>
       {isOpen && (
@@ -67,9 +60,9 @@ export default function Sidebar({
       >
         <div className="p-5 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
-              style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}>
-              {userInitials}
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-extrabold text-sm"
+              style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)", letterSpacing: "-1px" }}>
+              FP
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight" style={{ color: "var(--text)" }}>Finanzas</h1>

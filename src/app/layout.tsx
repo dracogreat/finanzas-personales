@@ -24,9 +24,10 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="apple-touch-icon" href="/icons/icon-512.svg" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
       <body className={inter.className}>
         <Providers>{children}</Providers>
