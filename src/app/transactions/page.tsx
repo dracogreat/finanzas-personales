@@ -402,26 +402,31 @@ export default function TransactionsPage() {
                 const unitPrice = t.quantity && t.quantity > 0 ? t.amount / t.quantity : null
                 return (
                   <div key={t.id} className="p-4 transition-all" style={{ borderColor: "var(--border)" }}>
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ backgroundColor: cfg.bg }}>
                           {t.category.icon}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-medium truncate" style={{ color: "var(--text)" }}>{t.description}</p>
-                          <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
-                            <span className="px-1.5 py-0.5 rounded-md font-medium" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
-                            <span className="truncate">{t.category.name}</span>
+                          <div className="flex items-center gap-2 text-xs sm:text-sm" style={{ color: "var(--text-secondary)" }}>
+                            <span className="px-1.5 py-0.5 rounded-md text-xs font-medium" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                            <span>{t.category.name}</span>
                             <span>·</span>
                             <span>{formatDate(t.date)}</span>
+                            {t.quantity && unitPrice ? <span className="hidden sm:inline">{t.quantity} und. x S/ {unitPrice.toFixed(2)}</span> : null}
                           </div>
                         </div>
                       </div>
-                      <span className="font-bold text-sm flex-shrink-0" style={{ color: cfg.color }}>
-                        {cfg.sign}{formatCurrency(t.amount)}
-                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <span className="font-bold text-sm sm:text-base" style={{ color: cfg.color }}>
+                          {cfg.sign}{formatCurrency(t.amount)}
+                        </span>
+                        <button onClick={() => handleEdit(t)} className="p-2 rounded-lg transition-colors hidden sm:block" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                        <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg transition-colors hidden sm:block" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 mt-2 ml-14">
+                    <div className="flex items-center gap-1 mt-2 ml-14 sm:hidden">
                       <button onClick={() => handleEdit(t)} className="p-2 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>✏️</button>
                       <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>🗑️</button>
                     </div>
