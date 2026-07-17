@@ -29,6 +29,7 @@ type Transaction = {
   description: string
   date: string
   type: string
+  status: string
   category: { id: string; name: string; color: string; icon: string }
 }
 
@@ -83,7 +84,7 @@ export default function ReportsPage() {
       const prevYear = parseInt(selectedMonth) === 1 ? selectedYear - 1 : selectedYear
       const res = await fetch(`/api/transactions?month=${prevMonth}&year=${prevYear}`)
       const data = await res.json()
-      setPrevMonthData(data)
+      setPrevMonthData(data.filter((t: Transaction) => t.status === "confirmed"))
     } catch { setPrevMonthData([]) }
   }
 
@@ -144,7 +145,7 @@ export default function ReportsPage() {
     } catch { toast.error("Error al crear backup") }
   }
 
-  const filteredByType = typeFilter === "all" ? transactions : transactions.filter((t) => t.type === typeFilter)
+  const filteredByType = (typeFilter === "all" ? transactions : transactions.filter((t) => t.type === typeFilter)).filter((t) => t.status === "confirmed")
 
   const totalEntradas = filteredByType.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
   const totalSalidas = filteredByType.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)

@@ -25,11 +25,19 @@ export default function Sidebar({
   const pathname = usePathname()
   const { data: session } = useSession()
   const [dark, setDark] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => {
     const saved = localStorage.getItem("darkMode") === "true"
     setDark(saved)
     document.documentElement.classList.toggle("dark", saved)
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/pending/check")
+      .then((res) => res.json())
+      .then((data) => setPendingCount(data.pendingCount))
+      .catch(() => {})
   }, [])
 
   function toggleDark() {
@@ -89,6 +97,11 @@ export default function Sidebar({
                 )}
                 <span className="text-lg">{item.icon}</span>
                 {item.label}
+                {item.href === "/transactions" && pendingCount > 0 && (
+                  <span className="ml-auto px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: "rgba(245,158,11,0.15)", color: "#f59e0b" }}>
+                    {pendingCount}
+                  </span>
+                )}
               </Link>
             )
           })}

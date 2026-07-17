@@ -33,6 +33,7 @@ export async function GET(request: Request) {
           userId: session.user.id,
           categoryId: budget.categoryId,
           type: "salida",
+          status: "confirmed",
           date: {
             gte: new Date(y, m - 1, 1),
             lt: new Date(y, m, 1),

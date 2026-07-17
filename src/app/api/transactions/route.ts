@@ -2,12 +2,15 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { generatePendingTransactions } from "@/lib/recurring"
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   }
+
+  await generatePendingTransactions(session.user.id)
 
   const { searchParams } = new URL(request.url)
   const month = searchParams.get("month")
@@ -100,6 +103,7 @@ export async function POST(request: Request) {
         description,
         date: new Date(date + "T12:00:00"),
         type,
+        status: "confirmed",
         categoryId: finalCategoryId,
         userId: session.user.id,
       },

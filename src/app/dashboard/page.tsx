@@ -28,6 +28,7 @@ type Transaction = {
   description: string
   date: string
   type: string
+  status: string
   category: { name: string; color: string; icon: string }
 }
 
@@ -55,9 +56,10 @@ export default function DashboardPage() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [balance, setBalance] = useState<Balance | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => { if (status === "unauthenticated") redirect("/login") }, [status])
-  useEffect(() => { Promise.all([fetchTransactions(), fetchBudgets(), fetchBalance()]) }, [])
+  useEffect(() => { Promise.all([fetchTransactions(), fetchBudgets(), fetchBalance(), checkPending()]) }, [])
 
   async function fetchTransactions() {
     try { const res = await fetch("/api/transactions"); const data = await res.json(); setTransactions(data) }
@@ -72,6 +74,17 @@ export default function DashboardPage() {
     catch { console.error("Error fetching balance") } finally { checkReady() }
   }
 
+  async function checkPending() {
+    try {
+      const res = await fetch("/api/pending/check")
+      const data = await res.json()
+      setPendingCount(data.pendingCount)
+      if (data.newlyCreated > 0) {
+        alert(`Tienes ${data.newlyCreated} transacción${data.newlyCreated > 1 ? "s" : ""} pendiente${data.newlyCreated > 1 ? "s" : ""} de transacciones recurrentes`)
+      }
+    } catch { console.error("Error checking pending") } finally { checkReady() }
+  }
+
   const loadedRef = useRef(0)
   function checkReady() {
     loadedRef.current++
@@ -80,20 +93,23 @@ export default function DashboardPage() {
 
   const initialBalance = balance?.initialBalance || 0
 
-  const totalEntradas = transactions.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
-  const totalSalidas = transactions.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
-  const totalAhorros = transactions.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
-  const totalRetirosAhorro = transactions.filter((t) => t.type === "retiro_ahorro").reduce((s, t) => s + t.amount, 0)
-  const totalDeudas = transactions.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
-  const totalPagosDeuda = transactions.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
+  const confirmed = transactions.filter((t) => t.status === "confirmed")
+  const pending = transactions.filter((t) => t.status === "pending")
+
+  const totalEntradas = confirmed.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
+  const totalSalidas = confirmed.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
+  const totalAhorros = confirmed.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+  const totalRetirosAhorro = confirmed.filter((t) => t.type === "retiro_ahorro").reduce((s, t) => s + t.amount, 0)
+  const totalDeudas = confirmed.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
+  const totalPagosDeuda = confirmed.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
   const disponible = initialBalance + totalEntradas - totalSalidas - totalAhorros + totalRetirosAhorro - totalPagosDeuda
 
   const today = new Date()
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
-  const gastoHoy = transactions.filter((t) => t.type === "salida" && new Date(t.date).toISOString().split("T")[0] === todayKey).reduce((s, t) => s + t.amount, 0)
-  const ingresoHoy = transactions.filter((t) => t.type === "entrada" && new Date(t.date).toISOString().split("T")[0] === todayKey).reduce((s, t) => s + t.amount, 0)
+  const gastoHoy = confirmed.filter((t) => t.type === "salida" && new Date(t.date).toISOString().split("T")[0] === todayKey).reduce((s, t) => s + t.amount, 0)
+  const ingresoHoy = confirmed.filter((t) => t.type === "entrada" && new Date(t.date).toISOString().split("T")[0] === todayKey).reduce((s, t) => s + t.amount, 0)
 
-  const expensesByCategory = transactions
+  const expensesByCategory = confirmed
     .filter((t) => t.type === "salida")
     .reduce<Record<string, { name: string; value: number; color: string }>>((acc, t) => {
       const key = t.category.name
@@ -103,7 +119,7 @@ export default function DashboardPage() {
     }, {})
   const pieData = Object.values(expensesByCategory)
 
-  const monthlyData = transactions.reduce<Record<string, { month: string; income: number; expense: number; saving: number; retiroAh: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
+  const monthlyData = confirmed.reduce<Record<string, { month: string; income: number; expense: number; saving: number; retiroAh: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
     const date = new Date(t.date)
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
     if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0, retiroAh: 0, deuda: 0, pagoDeuda: 0 }
@@ -128,7 +144,7 @@ export default function DashboardPage() {
   const currentYear = new Date().getFullYear()
   const activeBudgets = budgets.filter((b) => b.month === currentMonth && b.year === currentYear)
 
-  const recentTransactions = transactions.slice(0, 5)
+  const recentTransactions = confirmed.slice(0, 5)
 
   const dayOfMonth = today.getDate()
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
@@ -148,6 +164,20 @@ export default function DashboardPage() {
       )
     }
     return null
+  }
+
+  async function handleStatus(id: string, status: "confirmed" | "rejected") {
+    try {
+      const res = await fetch(`/api/transactions/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      })
+      if (res.ok) {
+        setTransactions((prev) => prev.map((t) => t.id === id ? { ...t, status } : t))
+        setPendingCount((prev) => Math.max(0, prev - 1))
+      }
+    } catch { console.error("Error updating status") }
   }
 
   if (status === "loading") {
@@ -244,6 +274,36 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-4 text-xs ml-13" style={{ color: "var(--text-secondary)" }}>
                     <span>Gasto/día: {formatCurrency(gastoDiarioPromedio)}</span>
                     <span>Faltan {daysRemaining} días</span>
+                  </div>
+                </div>
+              )}
+
+              {pending.length > 0 && (
+                <div className="rounded-2xl p-4 border-2" style={{ backgroundColor: "rgba(245,158,11,0.05)", borderColor: "#f59e0b" }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">⏳</span>
+                    <h2 className="font-semibold" style={{ color: "#f59e0b" }}>Transacciones pendientes ({pending.length})</h2>
+                  </div>
+                  <div className="space-y-2">
+                    {pending.slice(0, 5).map((t) => {
+                      const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.salida
+                      return (
+                        <div key={t.id} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: "var(--bg-card)" }}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ backgroundColor: cfg.bg }}>{t.category.icon}</div>
+                            <div>
+                              <p className="font-medium text-sm" style={{ color: "var(--text)" }}>{t.description}</p>
+                              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{cfg.label} · {t.category.name}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm" style={{ color: cfg.color }}>{cfg.sign}{formatCurrency(t.amount)}</span>
+                            <button onClick={() => handleStatus(t.id, "confirmed")} className="px-2 py-1 rounded text-xs font-medium" style={{ backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e" }}>✓</button>
+                            <button onClick={() => handleStatus(t.id, "rejected")} className="px-2 py-1 rounded text-xs font-medium" style={{ backgroundColor: "rgba(239,68,68,0.12)", color: "#ef4444" }}>✗</button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}

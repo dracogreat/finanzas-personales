@@ -33,6 +33,7 @@ type Transaction = {
   description: string
   date: string
   type: string
+  status: string
   categoryId: string
   category: Category
 }
@@ -154,6 +155,19 @@ export default function TransactionsPage() {
     if (!confirm("¿Eliminar esta transacción?")) return
     try { const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" }); if (!res.ok) throw new Error(); toast.success("Transacción eliminada"); fetchTransactions() }
     catch { toast.error("Error al eliminar transacción") }
+  }
+
+  async function handleStatus(id: string, status: "confirmed" | "rejected") {
+    try {
+      const res = await fetch(`/api/transactions/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success(status === "confirmed" ? "Transacción confirmada" : "Transacción rechazada")
+      fetchTransactions()
+    } catch { toast.error("Error al actualizar") }
   }
 
   function handleEdit(t: Transaction) {
@@ -411,6 +425,9 @@ export default function TransactionsPage() {
                           <p className="font-medium truncate" style={{ color: "var(--text)" }}>{t.description}</p>
                           <div className="flex items-center gap-2 text-xs sm:text-sm" style={{ color: "var(--text-secondary)" }}>
                             <span className="px-1.5 py-0.5 rounded-md text-xs font-medium" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                            {t.status === "pending" && (
+                              <span className="px-1.5 py-0.5 rounded-md text-xs font-medium" style={{ backgroundColor: "rgba(245,158,11,0.15)", color: "#f59e0b" }}>⏳ Pendiente</span>
+                            )}
                             <span>{t.category.name}</span>
                             <span>·</span>
                             <span>{formatDate(t.date)}</span>
@@ -422,13 +439,31 @@ export default function TransactionsPage() {
                         <span className="font-bold text-sm sm:text-base" style={{ color: cfg.color }}>
                           {cfg.sign}{formatCurrency(t.amount)}
                         </span>
-                        <button onClick={() => handleEdit(t)} className="p-2 rounded-lg transition-colors hidden sm:block" style={{ color: "var(--text-secondary)" }}>✏️</button>
-                        <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg transition-colors hidden sm:block" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                        {t.status === "pending" ? (
+                          <>
+                            <button onClick={() => handleStatus(t.id, "confirmed")} className="px-2 py-1 rounded-lg text-xs font-medium" style={{ backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e" }}>✓</button>
+                            <button onClick={() => handleStatus(t.id, "rejected")} className="px-2 py-1 rounded-lg text-xs font-medium" style={{ backgroundColor: "rgba(239,68,68,0.12)", color: "#ef4444" }}>✗</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleEdit(t)} className="p-2 rounded-lg transition-colors hidden sm:block" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                            <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg transition-colors hidden sm:block" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 mt-2 ml-14 sm:hidden">
-                      <button onClick={() => handleEdit(t)} className="p-2 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>✏️</button>
-                      <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                      {t.status === "pending" ? (
+                        <>
+                          <button onClick={() => handleStatus(t.id, "confirmed")} className="px-2 py-1 rounded-lg text-xs font-medium" style={{ backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e" }}>✓ Confirmar</button>
+                          <button onClick={() => handleStatus(t.id, "rejected")} className="px-2 py-1 rounded-lg text-xs font-medium" style={{ backgroundColor: "rgba(239,68,68,0.12)", color: "#ef4444" }}>✗ Rechazar</button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => handleEdit(t)} className="p-2 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                          <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )

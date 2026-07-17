@@ -43,11 +43,14 @@ model Transaction {
   notes       String?
   description String
   date        DateTime
-  type        String   // "income" o "expense"
+  type        String
+  status      String   @default("confirmed") // "pending" | "confirmed" | "rejected"
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringId String?
+  recurring   RecurringTransaction? @relation(fields: [recurringId], references: [id])
   createdAt   DateTime @default(now())
 }
 
@@ -98,6 +101,7 @@ model RecurringTransaction {
   active      Boolean  @default(true)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
   createdAt   DateTime @default(now())
 }
 
