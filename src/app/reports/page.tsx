@@ -343,31 +343,31 @@ export default function ReportsPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Entradas</p>
-                  <p className="text-xl font-bold" style={{ color: "#22c55e" }}>{formatCurrency(totalEntradas)}</p>
+                  <p className="text-lg sm:text-xl font-bold truncate" style={{ color: "#22c55e" }}>{formatCurrency(totalEntradas)}</p>
                 </div>
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(239,68,68,0.12)" }}>💸</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Salidas</p>
-                  <p className="text-xl font-bold" style={{ color: "#ef4444" }}>{formatCurrency(totalSalidas)}</p>
+                  <p className="text-lg sm:text-xl font-bold truncate" style={{ color: "#ef4444" }}>{formatCurrency(totalSalidas)}</p>
                 </div>
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorros</p>
-                  <p className="text-xl font-bold" style={{ color: "#f59e0b" }}>{formatCurrency(ahorros)}</p>
+                  <p className="text-lg sm:text-xl font-bold truncate" style={{ color: "#f59e0b" }}>{formatCurrency(ahorros)}</p>
                 </div>
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(139,92,246,0.12)" }}>🤝</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>P. Deuda</p>
-                  <p className="text-xl font-bold" style={{ color: "#8b5cf6" }}>{formatCurrency(totalPagosDeuda)}</p>
+                  <p className="text-lg sm:text-xl font-bold truncate" style={{ color: "#8b5cf6" }}>{formatCurrency(totalPagosDeuda)}</p>
                 </div>
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: disponible >= 0 ? "rgba(99,102,241,0.12)" : "rgba(239,68,68,0.12)" }}>✨</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Disponible</p>
-                  <p className="text-xl font-bold" style={{ color: disponible >= 0 ? "#6366f1" : "#ef4444" }}>{formatCurrency(disponible)}</p>
+                  <p className="text-lg sm:text-xl font-bold truncate" style={{ color: disponible >= 0 ? "#6366f1" : "#ef4444" }}>{formatCurrency(disponible)}</p>
                 </div>
               </div>
 
@@ -376,7 +376,7 @@ export default function ReportsPage() {
                   <p className="text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
                     Equivalente en {showCurrency} (1 PEN = {RATES[showCurrency]} {showCurrency})
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Entradas: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalEntradas, "PEN", showCurrency), showCurrency)}</span></div>
                     <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Salidas: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalSalidas, "PEN", showCurrency), showCurrency)}</span></div>
                     <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Ahorros: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalAhorros, "PEN", showCurrency), showCurrency)}</span></div>
@@ -458,13 +458,13 @@ export default function ReportsPage() {
                   <span className="text-lg">📋</span>
                   <h2 className="font-semibold" style={{ color: "var(--text)" }}>Detalle de transacciones</h2>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <table className="w-full text-sm" style={{ minWidth: "500px" }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                         <th className="text-left py-2 px-2">Fecha</th>
-                        <th className="text-left py-2 px-2">Tipo</th>
-                        <th className="text-left py-2 px-2">Categoría</th>
+                        <th className="text-left py-2 px-2 hidden sm:table-cell">Tipo</th>
+                        <th className="text-left py-2 px-2">Cat.</th>
                         <th className="text-left py-2 px-2">Descripción</th>
                         <th className="text-right py-2 px-2">Monto</th>
                       </tr>
@@ -476,13 +476,13 @@ export default function ReportsPage() {
                           <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}
                             onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
                             onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}>
-                            <td className="py-2 px-2" style={{ color: "var(--text-secondary)" }}>{formatDate(t.date)}</td>
-                            <td className="py-2 px-2">
+                            <td className="py-2 px-2 text-xs" style={{ color: "var(--text-secondary)" }}>{formatDate(t.date)}</td>
+                            <td className="py-2 px-2 hidden sm:table-cell">
                               <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
                             </td>
-                            <td className="py-2 px-2">{t.category.icon} {t.category.name}</td>
-                            <td className="py-2 px-2" style={{ color: "var(--text)" }}>{t.description}</td>
-                            <td className="py-2 px-2 text-right font-medium" style={{ color: cfg.color }}>
+                            <td className="py-2 px-2 text-xs">{t.category.icon} <span className="hidden sm:inline">{t.category.name}</span></td>
+                            <td className="py-2 px-2 text-xs truncate max-w-[120px]" style={{ color: "var(--text)" }}>{t.description}</td>
+                            <td className="py-2 px-2 text-right font-medium text-xs" style={{ color: cfg.color }}>
                               {cfg.sign}{formatCurrency(t.amount)}
                             </td>
                           </tr>

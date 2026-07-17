@@ -197,8 +197,8 @@ export default function GoalsPage() {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <button onClick={() => handleEdit(goal)} className="text-sm p-1" style={{ color: "var(--text-secondary)" }}>✏️</button>
-                        <button onClick={() => handleDelete(goal.id)} className="text-sm p-1" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                        <button onClick={() => handleEdit(goal)} className="text-sm p-2" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                        <button onClick={() => handleDelete(goal.id)} className="text-sm p-2" style={{ color: "var(--text-secondary)" }}>🗑️</button>
                       </div>
                     </div>
 

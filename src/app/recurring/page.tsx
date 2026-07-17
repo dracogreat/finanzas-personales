@@ -214,25 +214,27 @@ export default function RecurringPage() {
                 const cfg = TYPE_CONFIG[r.type] || TYPE_CONFIG.salida
                 const freq = FREQUENCY_CONFIG[r.frequency] || FREQUENCY_CONFIG.monthly
                 return (
-                  <div key={r.id} className="flex items-center justify-between p-4 rounded-xl border" style={{ backgroundColor: "var(--bg-card)", borderColor: r.active ? "var(--border)" : "var(--border)", opacity: r.active ? 1 : 0.5 }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: cfg.bg }}>{r.category.icon}</div>
-                      <div>
-                        <p className="font-medium" style={{ color: "var(--text)" }}>{r.description}</p>
-                        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                          {cfg.label} · {freq.icon} {freq.label} · Próximo: {formatDate(r.nextDate)}
-                        </p>
+                  <div key={r.id} className="p-4 rounded-xl border" style={{ backgroundColor: "var(--bg-card)", borderColor: r.active ? "var(--border)" : "var(--border)", opacity: r.active ? 1 : 0.5 }}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ backgroundColor: cfg.bg }}>{r.category.icon}</div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate" style={{ color: "var(--text)" }}>{r.description}</p>
+                          <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
+                            {cfg.label} · {freq.label} · {formatDate(r.nextDate)}
+                          </p>
+                        </div>
                       </div>
+                      <span className="font-bold text-sm flex-shrink-0" style={{ color: cfg.color }}>{formatCurrency(r.amount)}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold" style={{ color: cfg.color }}>{formatCurrency(r.amount)}</span>
-                      <button onClick={() => toggleActive(r)} className="px-3 py-1 rounded-lg text-xs font-medium"
+                    <div className="flex items-center gap-2 mt-3 ml-14">
+                      <button onClick={() => toggleActive(r)} className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ backgroundColor: r.active ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: r.active ? "#22c55e" : "#ef4444" }}>
                         {r.active ? "Activa" : "Pausada"}
                       </button>
                       <button onClick={() => { setEditing(r); setForm({ description: r.description, amount: String(r.amount), type: r.type, categoryId: r.categoryId, frequency: r.frequency, nextDate: new Date(r.nextDate).toISOString().split("T")[0] }); setShowForm(true) }}
-                        className="p-1.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>✏️</button>
-                      <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded-lg" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                        className="p-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                      <button onClick={() => handleDelete(r.id)} className="p-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>🗑️</button>
                     </div>
                   </div>
                 )

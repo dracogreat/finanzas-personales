@@ -234,16 +234,16 @@ export default function DashboardPage() {
 
               {totalSalidas > 0 && (
                 <div className="rounded-2xl p-4 border" style={{ backgroundColor: proyeccion >= 0 ? "rgba(99,102,241,0.05)" : "rgba(239,68,68,0.05)", borderColor: proyeccion >= 0 ? "#6366f1" : "#ef4444" }}>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: proyeccion >= 0 ? "rgba(99,102,241,0.12)" : "rgba(239,68,68,0.12)" }}>🔮</div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Proyección fin de mes</p>
-                      <p className="text-lg font-bold" style={{ color: proyeccion >= 0 ? "#6366f1" : "#ef4444" }}>{formatCurrency(proyeccion)}</p>
+                      <p className="text-lg font-bold truncate" style={{ color: proyeccion >= 0 ? "#6366f1" : "#ef4444" }}>{formatCurrency(proyeccion)}</p>
                     </div>
-                    <div className="text-right text-xs" style={{ color: "var(--text-secondary)" }}>
-                      <p>Gasto promedio/día: {formatCurrency(gastoDiarioPromedio)}</p>
-                      <p>Faltan {daysRemaining} días</p>
-                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs ml-13" style={{ color: "var(--text-secondary)" }}>
+                    <span>Gasto/día: {formatCurrency(gastoDiarioPromedio)}</span>
+                    <span>Faltan {daysRemaining} días</span>
                   </div>
                 </div>
               )}
@@ -266,10 +266,10 @@ export default function DashboardPage() {
                             const pct = b.amount > 0 ? Math.round((b.spent / b.amount) * 100) : 0
                             const isOver = b.spent > b.amount
                             return (
-                              <div key={b.id} className="flex items-center justify-between text-sm p-2 rounded-lg" style={{ backgroundColor: "var(--bg-card)" }}>
+                              <div key={b.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm p-2 rounded-lg gap-1" style={{ backgroundColor: "var(--bg-card)" }}>
                                 <span style={{ color: "var(--text)" }}>{b.category.icon} {b.category.name}</span>
-                                <span className="font-medium" style={{ color: isOver ? "#ef4444" : "#f59e0b" }}>
-                                  {isOver ? `Excedido en ${formatCurrency(b.spent - b.amount)}` : `${pct}% usado — Te quedan ${formatCurrency(b.amount - b.spent)}`}
+                                <span className="font-medium text-xs" style={{ color: isOver ? "#ef4444" : "#f59e0b" }}>
+                                  {isOver ? `Excedido: ${formatCurrency(b.spent - b.amount)}` : `${pct}% — Quedan ${formatCurrency(b.amount - b.spent)}`}
                                 </span>
                               </div>
                             )

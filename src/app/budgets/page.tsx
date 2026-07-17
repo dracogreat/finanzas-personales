@@ -219,7 +219,7 @@ export default function BudgetsPage() {
                       </div>
                       <button
                         onClick={() => handleDelete(budget.id)}
-                        className="text-sm"
+                        className="text-sm p-2"
                         style={{ color: "var(--text-secondary)" }}
                         onMouseOver={(e) => e.currentTarget.style.color = "var(--expense)"}
                         onMouseOut={(e) => e.currentTarget.style.color = "var(--text-secondary)"}

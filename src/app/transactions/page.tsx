@@ -401,29 +401,29 @@ export default function TransactionsPage() {
                 const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.salida
                 const unitPrice = t.quantity && t.quantity > 0 ? t.amount / t.quantity : null
                 return (
-                  <div key={t.id} className="flex items-center justify-between p-4 transition-all" style={{ borderColor: "var(--border)" }}>
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ backgroundColor: cfg.bg }}>
-                        {t.category.icon}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium truncate" style={{ color: "var(--text)" }}>{t.description}</p>
-                        <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-                          <span className="px-1.5 py-0.5 rounded-md text-xs font-medium" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
-                          <span>{t.category.name}</span>
-                          <span>·</span>
-                          <span>{formatDate(t.date)}</span>
-                          {t.quantity && unitPrice ? <span>{t.quantity} und. x S/ {unitPrice.toFixed(2)}</span> : null}
+                  <div key={t.id} className="p-4 transition-all" style={{ borderColor: "var(--border)" }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ backgroundColor: cfg.bg }}>
+                          {t.category.icon}
                         </div>
-                        {t.notes && <p className="text-xs italic truncate mt-0.5" style={{ color: "var(--text-secondary)" }}>📝 {t.notes}</p>}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate" style={{ color: "var(--text)" }}>{t.description}</p>
+                          <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+                            <span className="px-1.5 py-0.5 rounded-md font-medium" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                            <span className="truncate">{t.category.name}</span>
+                            <span>·</span>
+                            <span>{formatDate(t.date)}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                      <span className="font-bold text-base" style={{ color: cfg.color }}>
+                      <span className="font-bold text-sm flex-shrink-0" style={{ color: cfg.color }}>
                         {cfg.sign}{formatCurrency(t.amount)}
                       </span>
-                      <button onClick={() => handleEdit(t)} className="p-1.5 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>✏️</button>
-                      <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>🗑️</button>
+                    </div>
+                    <div className="flex items-center gap-1 mt-2 ml-14">
+                      <button onClick={() => handleEdit(t)} className="p-2 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>✏️</button>
+                      <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg transition-colors" style={{ color: "var(--text-secondary)" }}>🗑️</button>
                     </div>
                   </div>
                 )
