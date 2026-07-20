@@ -35,6 +35,7 @@ type Transaction = {
 
 type Balance = {
   id: string
+  initialBalance: number
   initialSavings: number
 }
 
@@ -154,8 +155,9 @@ export default function ReportsPage() {
   const totalDeudas = filteredByType.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
   const totalPagosDeuda = filteredByType.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
   const initialSavings = balance?.initialSavings || 0
+  const initialBalance = balance?.initialBalance || 0
   const ahorros = selectedDay ? totalAhorros - totalRetiros : initialSavings + totalAhorros - totalRetiros
-  const disponible = totalEntradas - totalSalidas - totalAhorros + totalRetiros + totalDeudas - totalPagosDeuda
+  const disponible = initialBalance + totalEntradas - totalSalidas - totalAhorros + totalRetiros - totalPagosDeuda
 
   const byCategory = filteredByType
     .filter((t) => t.type === "salida")
@@ -167,26 +169,28 @@ export default function ReportsPage() {
     }, {})
   const pieData = Object.values(byCategory).sort((a, b) => b.value - a.value)
 
-  const byDay = filteredByType.reduce<Record<string, { date: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
+  const byDay = filteredByType.reduce<Record<string, { date: string; income: number; expense: number; saving: number; retiroAh: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
     const d = new Date(t.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-    if (!acc[key]) acc[key] = { date: key, income: 0, expense: 0, saving: 0, deuda: 0, pagoDeuda: 0 }
+    if (!acc[key]) acc[key] = { date: key, income: 0, expense: 0, saving: 0, retiroAh: 0, deuda: 0, pagoDeuda: 0 }
     if (t.type === "entrada") acc[key].income += t.amount
     else if (t.type === "salida") acc[key].expense += t.amount
     else if (t.type === "saving") acc[key].saving += t.amount
+    else if (t.type === "retiro_ahorro") acc[key].retiroAh += t.amount
     else if (t.type === "deuda") acc[key].deuda += t.amount
     else if (t.type === "pago_deuda") acc[key].pagoDeuda += t.amount
     return acc
   }, {})
   const lineData = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
 
-  const byMonth = filteredByType.reduce<Record<string, { month: string; income: number; expense: number; saving: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
+  const byMonth = filteredByType.reduce<Record<string, { month: string; income: number; expense: number; saving: number; retiroAh: number; deuda: number; pagoDeuda: number }>>((acc, t) => {
     const d = new Date(t.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-    if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0, deuda: 0, pagoDeuda: 0 }
+    if (!acc[key]) acc[key] = { month: key, income: 0, expense: 0, saving: 0, retiroAh: 0, deuda: 0, pagoDeuda: 0 }
     if (t.type === "entrada") acc[key].income += t.amount
     else if (t.type === "salida") acc[key].expense += t.amount
     else if (t.type === "saving") acc[key].saving += t.amount
+    else if (t.type === "retiro_ahorro") acc[key].retiroAh += t.amount
     else if (t.type === "deuda") acc[key].deuda += t.amount
     else if (t.type === "pago_deuda") acc[key].pagoDeuda += t.amount
     return acc
@@ -275,10 +279,14 @@ export default function ReportsPage() {
             const currEntradas = filteredByType.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
             const currSalidas = filteredByType.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
             const currAhorros = filteredByType.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+            const currRetiros = filteredByType.filter((t) => t.type === "retiro_ahorro").reduce((s, t) => s + t.amount, 0)
+            const currDeudas = filteredByType.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
             const currPagos = filteredByType.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
             const prevEntradas = prevMonthData.filter((t) => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
             const prevSalidas = prevMonthData.filter((t) => t.type === "salida").reduce((s, t) => s + t.amount, 0)
             const prevAhorros = prevMonthData.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0)
+            const prevRetiros = prevMonthData.filter((t) => t.type === "retiro_ahorro").reduce((s, t) => s + t.amount, 0)
+            const prevDeudas = prevMonthData.filter((t) => t.type === "deuda").reduce((s, t) => s + t.amount, 0)
             const prevPagos = prevMonthData.filter((t) => t.type === "pago_deuda").reduce((s, t) => s + t.amount, 0)
             const diff = (curr: number, prev: number) => {
               if (prev === 0) return curr > 0 ? { val: 100, up: true } : { val: 0, up: true }
@@ -288,6 +296,8 @@ export default function ReportsPage() {
             const dE = diff(currEntradas, prevEntradas)
             const dS = diff(currSalidas, prevSalidas)
             const dA = diff(currAhorros, prevAhorros)
+            const dR = diff(currRetiros, prevRetiros)
+            const dD = diff(currDeudas, prevDeudas)
             const dP = diff(currPagos, prevPagos)
             return (
               <div className="rounded-xl p-4 border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
@@ -295,12 +305,14 @@ export default function ReportsPage() {
                   <span className="text-lg">📊</span>
                   <h2 className="font-semibold" style={{ color: "var(--text)" }}>Comparativo con mes anterior</h2>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   {[
                     { label: "Entradas", curr: currEntradas, prev: prevEntradas, diff: dE, color: "#22c55e", icon: "💰" },
                     { label: "Salidas", curr: currSalidas, prev: prevSalidas, diff: dS, color: "#ef4444", icon: "💸" },
                     { label: "Ahorros", curr: currAhorros, prev: prevAhorros, diff: dA, color: "#f59e0b", icon: "🐷" },
-                    { label: "Pagos deuda", curr: currPagos, prev: prevPagos, diff: dP, color: "#8b5cf6", icon: "🤝" },
+                    { label: "Retiros", curr: currRetiros, prev: prevRetiros, diff: dR, color: "#f97316", icon: "🏧" },
+                    { label: "Deudas", curr: currDeudas, prev: prevDeudas, diff: dD, color: "#3b82f6", icon: "🏦" },
+                    { label: "Pagos", curr: currPagos, prev: prevPagos, diff: dP, color: "#8b5cf6", icon: "🤝" },
                   ].map((item) => (
                     <div key={item.label} className="p-3 rounded-lg" style={{ backgroundColor: "var(--bg-hover)" }}>
                       <div className="flex items-center gap-2 mb-1">
@@ -344,7 +356,7 @@ export default function ReportsPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(34,197,94,0.12)" }}>💰</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Entradas</p>
@@ -359,6 +371,16 @@ export default function ReportsPage() {
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(245,158,11,0.12)" }}>🐷</div>
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Ahorros</p>
                   <p className="text-lg sm:text-xl font-bold truncate" style={{ color: "#f59e0b" }}>{formatCurrency(ahorros)}</p>
+                </div>
+                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(249,115,22,0.12)" }}>🏧</div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Retiros</p>
+                  <p className="text-lg sm:text-xl font-bold truncate" style={{ color: "#f97316" }}>{formatCurrency(totalRetiros)}</p>
+                </div>
+                <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(59,130,246,0.12)" }}>🏦</div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Deudas</p>
+                  <p className="text-lg sm:text-xl font-bold truncate" style={{ color: "#3b82f6" }}>{formatCurrency(totalDeudas)}</p>
                 </div>
                 <div className="rounded-xl p-4 shadow-sm border" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base mb-2" style={{ backgroundColor: "rgba(139,92,246,0.12)" }}>🤝</div>
@@ -377,10 +399,12 @@ export default function ReportsPage() {
                   <p className="text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
                     Equivalente en {showCurrency} (1 PEN = {RATES[showCurrency]} {showCurrency})
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
                     <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Entradas: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalEntradas, "PEN", showCurrency), showCurrency)}</span></div>
                     <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Salidas: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalSalidas, "PEN", showCurrency), showCurrency)}</span></div>
                     <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Ahorros: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalAhorros, "PEN", showCurrency), showCurrency)}</span></div>
+                    <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Retiros: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalRetiros, "PEN", showCurrency), showCurrency)}</span></div>
+                    <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Deudas: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalDeudas, "PEN", showCurrency), showCurrency)}</span></div>
                     <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Pagos: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(totalPagosDeuda, "PEN", showCurrency), showCurrency)}</span></div>
                     <div className="text-sm"><span style={{ color: "var(--text-secondary)" }}>Disponible: </span><span className="font-medium">{formatCurrencyISO(convertCurrency(disponible, "PEN", showCurrency), showCurrency)}</span></div>
                   </div>
@@ -425,6 +449,7 @@ export default function ReportsPage() {
                       <Line type="monotone" dataKey="income" name="Entradas" stroke="#22c55e" strokeWidth={2} />
                       <Line type="monotone" dataKey="expense" name="Salidas" stroke="#ef4444" strokeWidth={2} />
                       <Line type="monotone" dataKey="saving" name="Ahorro" stroke="#f59e0b" strokeWidth={2} />
+                      <Line type="monotone" dataKey="retiroAh" name="Retiros" stroke="#f97316" strokeWidth={2} />
                       <Line type="monotone" dataKey="deuda" name="Deudas" stroke="#3b82f6" strokeWidth={2} />
                       <Line type="monotone" dataKey="pagoDeuda" name="Pagos" stroke="#8b5cf6" strokeWidth={2} />
                     </LineChart>
@@ -447,6 +472,7 @@ export default function ReportsPage() {
                       <Bar dataKey="income" name="Entradas" fill="#22c55e" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="expense" name="Salidas" fill="#ef4444" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="saving" name="Ahorro" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="retiroAh" name="Retiros" fill="#f97316" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="deuda" name="Deudas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="pagoDeuda" name="Pagos" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                     </BarChart>
